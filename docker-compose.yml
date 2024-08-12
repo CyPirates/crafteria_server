@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  application:
+    image : crafteria:latest
+    environment:
+      DATASOURCE_USERNAME: root
+      DATASOURCE_PASSWORD: P@ssw0rd99
+      DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+      DATASOURCE_URL: jdbc:mysql://34.22.91.2:3306/crafteria
+      JPA_DDL_AUTO: update
+      SERVER_PORT: 8080
+    restart: always
+    ports:
+      - "8080:8080"
