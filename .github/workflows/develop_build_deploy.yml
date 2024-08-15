@@ -85,5 +85,5 @@ jobs:
             sudo docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:develop
             sudo docker tag ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPOSITORY }}:develop crafteria_test
-            sudo docker-compose down test_server
-            sudo docker-compose up test_server -d
+            sudo docker-compose rm -s -v test_server
+            sudo docker-compose up -d test_server
