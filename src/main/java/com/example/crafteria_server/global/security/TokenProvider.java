@@ -29,7 +29,7 @@ import static com.example.crafteria_server.global.exception.ErrorCode.INVALID_TO
 @Component
 public class TokenProvider {
 
-    @Value("${jwt.key}")
+    @Value("${jwt_key}")
     private String key;
     private SecretKey secretKey;
     private static final long ACCESS_TOKEN_EXPIRE_TIME = 1000 * 60 * 30L;

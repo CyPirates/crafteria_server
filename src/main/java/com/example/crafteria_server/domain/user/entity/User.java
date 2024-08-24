@@ -1,11 +1,14 @@
 package com.example.crafteria_server.domain.user.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
 
     @Id
@@ -31,4 +34,5 @@ public class User {
         this.realname = realname;
         this.role = role;
     }
+
 }
