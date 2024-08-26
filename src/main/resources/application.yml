@@ -30,6 +30,23 @@ spring:
                 client-id: ${GOOGLE_CLIENT_ID}
                 client-secret: ${GOOGLE_CLIENT_SECRET}
                 scope: email, profile
+            kakao:
+              client-id: ${KAKAO_CLIENT_ID}
+              client-secret: ${KAKAO_CLIENT_SECRET}
+              redirect-uri: ${KAKAO_REDIRECT_URI}
+              authorization-grant-type: authorization_code
+              client-authentication-method: client_secret_post
+              scope:
+                - profile_nickname
+              client-name: kakao
+
+            #kakao provide 설정
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
 
 
 

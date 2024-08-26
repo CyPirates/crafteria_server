@@ -1,5 +1,6 @@
 package com.example.crafteria_server.domain.user.entity;
 
+import com.example.crafteria_server.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

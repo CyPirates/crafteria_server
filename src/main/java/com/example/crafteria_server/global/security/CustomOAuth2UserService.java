@@ -15,7 +15,7 @@ import java.util.Map;
 
 @RequiredArgsConstructor
 @Service
-public class CustomOAuth2UserSerivce extends DefaultOAuth2UserService {
+public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final UserRepository userRepository;
 
     @Transactional
