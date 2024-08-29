@@ -18,6 +18,7 @@ public record OAuth2UserInfo(
         return switch (registrationId) { // registration id별로 userInfo 생성
             case "google" -> ofGoogle(attributes);
             case "kakao" -> ofKakao(attributes);
+            case "naver" -> ofNaver(attributes);
             default -> throw new AuthException(ILLEGAL_REGISTRATION_ID);
         };
     }
@@ -35,6 +36,14 @@ public record OAuth2UserInfo(
 
         return OAuth2UserInfo.builder()
                 .name((String) profile.get("nickname"))
+                .build();
+    }
+
+    private static OAuth2UserInfo ofNaver(Map<String, Object> attributes) {
+        Map<String, Object> response = (Map<String, Object>) attributes.get("response");
+
+        return OAuth2UserInfo.builder()
+                .name((String) response.get("name"))
                 .build();
     }
     public User toEntity() {
