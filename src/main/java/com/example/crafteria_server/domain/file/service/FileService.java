@@ -94,7 +94,7 @@ public class FileService {
                     .fileName(fileName)
                     .extension(extension)
                     .uuid(uuid)
-                    .path(imageUrl)
+                    .url(imageUrl)
                     .type(Type.IMAGE)
                     .build();
 
@@ -125,7 +125,7 @@ public class FileService {
                     .fileName(fileName)
                     .extension(extension)
                     .uuid(uuid)
-                    .path(modelUrl)
+                    .url(modelUrl)
                     .type(Type.MODEL)
                     .build();
 
