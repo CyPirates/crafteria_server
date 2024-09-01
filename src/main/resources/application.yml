@@ -70,7 +70,10 @@ spring:
         project-id: ${GCS_PROJECT_ID}
         bucket-name: ${GCS_BUCKET_NAME}
         key-name: ${GCS_KEY_NAME}
-
+  data:
+    redis:
+      port: 6379
+      host: localhost
 
 
 server:
