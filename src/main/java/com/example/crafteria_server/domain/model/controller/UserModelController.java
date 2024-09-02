@@ -3,8 +3,10 @@ package com.example.crafteria_server.domain.model.controller;
 import com.example.crafteria_server.domain.model.dto.UserModelDto;
 import com.example.crafteria_server.domain.model.service.ModelService;
 import com.example.crafteria_server.global.response.JsonBody;
+import com.example.crafteria_server.global.security.PrincipalDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,8 +28,9 @@ public class UserModelController {
         return JsonBody.of(200, "성공", modelService.getModelDetail(modelId));
     }
 
-//    @PostMapping("/model/upload")
-//    public JsonBody<UserModelDto.Response> uploadModel(@RequestBody UserModelDto.UploadRequest request) {
-//        return JsonBody.of(200, "성공", modelService.uploadModel(request));
-//    }
+    @PostMapping("/model/upload")
+    public JsonBody<String /*UserModelDto.Response*/> uploadModel(/*@RequestBody UserModelDto.UploadRequest request, */@AuthenticationPrincipal PrincipalDetails principalDetails) {
+        log.info("userId: {}", principalDetails.getUserId());
+        return JsonBody.of(200, "성공", "GOOD");
+    }
 }

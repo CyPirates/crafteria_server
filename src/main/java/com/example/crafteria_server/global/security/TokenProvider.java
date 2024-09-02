@@ -12,7 +12,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -36,6 +35,8 @@ public class TokenProvider {
     private static final long REFRESH_TOKEN_EXPIRE_TIME = 1000 * 60 * 60L * 24 * 7;
     private static final String KEY_ROLE = "role";
     private final TokenService tokenService;
+    private final PrincipalService principalService;
+    private final CustomOAuth2UserService customOAuth2UserService;
 
     @PostConstruct
     private void setSecretKey() {
@@ -72,10 +73,12 @@ public class TokenProvider {
     public Authentication getAuthentication(String token) {
         Claims claims = parseClaims(token);
         List<SimpleGrantedAuthority> authorities = getAuthorities(claims);
+        System.out.println(claims.get("email", String.class));
 
         // 2. security의 User 객체 생성
-        User principal = new User(claims.getSubject(), "", authorities);
-        return new UsernamePasswordAuthenticationToken(principal, token, authorities);
+//        User principal = new User(claims.getSubject(), "", authorities);
+        PrincipalDetails principalDetails = principalService.loadUserByUsername(claims.getSubject());
+        return new UsernamePasswordAuthenticationToken(principalDetails, token, principalDetails.getAuthorities());
     }
 
     private List<SimpleGrantedAuthority> getAuthorities(Claims claims) {

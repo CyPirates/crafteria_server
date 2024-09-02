@@ -22,6 +22,11 @@ public class SwaggerConfig {
 
     @Bean
     public OpenAPI apiDocConfig() {
+        SecurityScheme apiKey = new SecurityScheme()
+                .type(SecurityScheme.Type.APIKEY)
+                .in(SecurityScheme.In.HEADER)
+                .name("Authorization");
+
         SecurityRequirement securityRequirement = new SecurityRequirement()
                 .addList("Bearer Token");
 
@@ -31,7 +36,7 @@ public class SwaggerConfig {
                         .description("Crafteria API 명세서")
                         .version("1.0.0")
                 ).components(new Components().addSecuritySchemes
-                        ("Bearer Authentication", createAPIKeyScheme()))
+                        ("Bearer Token", apiKey))
                 .addSecurityItem(securityRequirement);
     }
 
