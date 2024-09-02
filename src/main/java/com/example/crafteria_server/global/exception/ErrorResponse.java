@@ -15,7 +15,7 @@ public class ErrorResponse implements ResponseBody {
 
     public static ErrorResponse toResponse(ErrorCode errorCode){
         return ErrorResponse.builder()
-                .status(errorCode.getStatus().value())
+                .status(errorCode.getHttpStatus().value())
                 .message(errorCode.getMessage())
                 .build();
     }
