@@ -2,16 +2,10 @@ package com.example.crafteria_server.config;
 
 import com.example.crafteria_server.global.handler.CustomAccessDeniedHandler;
 import com.example.crafteria_server.global.handler.CustomAuthenticationEntryPoint;
-import com.example.crafteria_server.global.security.CustomOAuth2UserSerivce;
+import com.example.crafteria_server.global.security.CustomOAuth2UserService;
 import com.example.crafteria_server.global.security.OAuth2SuccessHandler;
 import com.example.crafteria_server.global.security.TokenAuthenticationFilter;
 import com.example.crafteria_server.global.security.TokenExceptionFilter;
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.OctetSequenceKey;
-import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
-import com.nimbusds.jose.jwk.source.JWKSource;
-import com.nimbusds.jose.proc.SecurityContext;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,20 +15,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 
 @RequiredArgsConstructor
 @Configuration
@@ -42,7 +25,7 @@ import javax.crypto.spec.SecretKeySpec;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final CustomOAuth2UserSerivce oAuth2UserService;
+    private final CustomOAuth2UserService oAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final TokenAuthenticationFilter tokenAuthenticationFilter;
 
@@ -55,7 +38,8 @@ public class SecurityConfig {
             "/loginSuccess",
             "/oauth2/**",
             "/",
-            "/login"
+            "/login",
+            "/auth/**",
     };
 
     @Bean
@@ -79,19 +63,19 @@ public class SecurityConfig {
                         c.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 사용하지 않음
 
                 // request 인증, 인가 설정
-                .authorizeHttpRequests(request ->
+                /*.authorizeHttpRequests(request ->
                         request.requestMatchers(
                                 new AntPathRequestMatcher("/"),
                                 new AntPathRequestMatcher("/auth/success")
                                 ).permitAll()
                 .anyRequest().authenticated()
-                )
+                )*/
 
-                /*.authorizeHttpRequests(authorizeRequests ->
+                .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
                                 .requestMatchers(whiteList).permitAll() // 허용된 경로
                                 .anyRequest().authenticated() // 그 외의 모든 요청은 인증 필요
-                )*/
+                )
 
         // oauth2 설정
                 .oauth2Login(oauth -> // OAuth2 로그인 기능에 대한 여러 설정의 진입점

@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import static org.springframework.http.HttpStatus.NOT_ACCEPTABLE;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
+
 @Getter
 @AllArgsConstructor
 public enum ErrorCode {
