@@ -29,7 +29,7 @@ public class File extends BaseEntity {
     private String uuid;
 
     @Column(nullable = false)
-    private String path;
+    private String url;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)

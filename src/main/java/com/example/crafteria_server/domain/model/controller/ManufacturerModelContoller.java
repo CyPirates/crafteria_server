@@ -6,9 +6,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@Slf4j(topic = "ModelController")
+@Slf4j(topic = "ManufacturerModelController")
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/model")
-public class ModelController {
+@RequestMapping("/api/v1/manufacturer/model")
+public class ManufacturerModelContoller {
 
 }
