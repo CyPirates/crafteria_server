@@ -73,6 +73,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      #create json 
+      - name: create-json
+        id: create-json
+        uses: jsdaniell/create-json@v1.2.3
+        with:
+          name: "credentials.json"
+          json: ${{ secrets.CREDENTIALS_JSON }}
+          dir: "src/main/resources/"
       - name: Deploy to GCP
         uses: appleboy/ssh-action@master
         with:
