@@ -39,6 +39,15 @@ jobs:
           spring.jpa.hibernate.ddl-auto: ${{ secrets.JPA_DDL_AUTO }}
           server.port: ${{ secrets.TEST_SERVER_PORT }}
 
+        #Create json
+      - name: create-json
+        id: create-json
+        uses: jsdaniell/create-json@v1.2.3
+        with:
+          name: "credentials.json"
+          json: ${{ secrets.CREDENTIALS_JSON }}
+          dir: "src/main/resources/"
+
       # Configure Gradle for optimal use in GiHub Actions, including caching of downloaded dependencies.
       # See: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
       - name: Setup Gradle
@@ -73,14 +82,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      #create json 
-      - name: create-json
-        id: create-json
-        uses: jsdaniell/create-json@v1.2.3
-        with:
-          name: "credentials.json"
-          json: ${{ secrets.CREDENTIALS_JSON }}
-          dir: "src/main/resources/"
       - name: Deploy to GCP
         uses: appleboy/ssh-action@master
         with:
