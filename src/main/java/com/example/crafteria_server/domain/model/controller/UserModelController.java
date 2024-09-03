@@ -19,17 +19,17 @@ public class UserModelController {
     private final ModelService modelService;
 
     @GetMapping("/list/popular")
-    public JsonBody<List<UserModelDto.Response>> getPopularModelList(@RequestParam(defaultValue = "0") int page) {
+    public JsonBody<List<UserModelDto.ModelResponse>> getPopularModelList(@RequestParam(defaultValue = "0") int page) {
         return JsonBody.of(200, "성공", modelService.getPopularList(page));
     }
 
     @GetMapping("/model/{modelId}")
-    public JsonBody<UserModelDto.Response> getModelDetail(@PathVariable Long modelId) {
+    public JsonBody<UserModelDto.ModelResponse> getModelDetail(@PathVariable Long modelId) {
         return JsonBody.of(200, "성공", modelService.getModelDetail(modelId));
     }
 
     @PostMapping(value = "/model/upload", consumes = "multipart/form-data", produces = "application/json")
-    public JsonBody<UserModelDto.Response> uploadModel(@AuthenticationPrincipal PrincipalDetails principalDetails, @ModelAttribute UserModelDto.UploadRequest request) {
+    public JsonBody<UserModelDto.ModelResponse> uploadModel(@AuthenticationPrincipal PrincipalDetails principalDetails, @ModelAttribute UserModelDto.ModelUploadRequest request) {
         return JsonBody.of(200, "성공", modelService.uploadModel(principalDetails.getUserId(), request));
     }
 

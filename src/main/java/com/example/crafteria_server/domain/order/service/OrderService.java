@@ -30,21 +30,21 @@ public class OrderService {
     private final UserRepository userRepository;
 
 
-    public List<OrderDto.Response> getMyOrderList(Long userId, int page) {
+    public List<OrderDto.OrderResponse> getMyOrderList(Long userId, int page) {
         PageRequest pageable = PageRequest.of(page, 10);
         return orderRepository.findAllByUserId(userId, pageable).stream()
-                .map(OrderDto.Response::from)
+                .map(OrderDto.OrderResponse::from)
                 .toList();
     }
 
-    public OrderDto.Response getOrderDetail(Long userId, Long orderId) {
+    public OrderDto.OrderResponse getOrderDetail(Long userId, Long orderId) {
         Order order = orderRepository.findByUserIdAndId(userId, orderId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
 
-        return OrderDto.Response.from(order);
+        return OrderDto.OrderResponse.from(order);
     }
 
-    public OrderDto.Response createOrder(Long userId, OrderDto.CreateRequest request) {
+    public OrderDto.OrderResponse createOrder(Long userId, OrderDto.OrderRequest request) {
         User user = userRepository.findById(userId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
 
@@ -64,6 +64,6 @@ public class OrderService {
                 .purchasePrice(model.getPrice())
                 .build();
 
-        return OrderDto.Response.from(orderRepository.save(order));
+        return OrderDto.OrderResponse.from(orderRepository.save(order));
     }
 }

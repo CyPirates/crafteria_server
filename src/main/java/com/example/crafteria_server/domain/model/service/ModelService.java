@@ -30,21 +30,21 @@ public class ModelService {
     private final AuthorRepository authorRepository;
     private final FileService fileService;
 
-    public List<UserModelDto.Response> getPopularList(int page) {
+    public List<UserModelDto.ModelResponse> getPopularList(int page) {
         Pageable pageable = PageRequest.of(page, 10);
         return modelRepository.findAllOrderByViewCountDesc(pageable).stream()
-                .map(UserModelDto.Response::from)
+                .map(UserModelDto.ModelResponse::from)
                 .toList();
     }
 
-    public UserModelDto.Response getModelDetail(Long modelId) {
+    public UserModelDto.ModelResponse getModelDetail(Long modelId) {
         Model model = modelRepository.findById(modelId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
         model.setViewCount(model.getViewCount() + 1);
-        return UserModelDto.Response.from(modelRepository.save(model));
+        return UserModelDto.ModelResponse.from(modelRepository.save(model));
     }
 
-    public UserModelDto.Response uploadModel(Long userId, UserModelDto.UploadRequest request) {
+    public UserModelDto.ModelResponse uploadModel(Long userId, UserModelDto.ModelUploadRequest request) {
         User user = userRepository.findById(userId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
         log.info("userid: {}", user.getId());
@@ -72,7 +72,7 @@ public class ModelService {
                 .modelFile(modelFile)
                 .build();
 
-        return UserModelDto.Response.from(modelRepository.save(newModel));
+        return UserModelDto.ModelResponse.from(modelRepository.save(newModel));
     }
 
 }

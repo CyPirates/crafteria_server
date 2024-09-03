@@ -11,7 +11,7 @@ public class OrderDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class Response {
+    public static class OrderResponse {
         @NotNull
         @Schema(description = "유저 ID", example = "1")
         private long userId;
@@ -32,8 +32,8 @@ public class OrderDto {
         @Schema(description = "구매 상태", example = "ORDERED")
         private String status;
 
-        public static Response from(Order order) {
-            return Response.builder()
+        public static OrderResponse from(Order order) {
+            return OrderResponse.builder()
                     .userId(order.getUser().getId())
                     .modelId(order.getModel().getId())
                     .purchasePrice(order.getPurchasePrice())
@@ -48,7 +48,7 @@ public class OrderDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class CreateRequest {
+    public static class OrderRequest {
         @NotNull
         @Schema(description = "도면 ID", example = "1")
         private long modelId;
