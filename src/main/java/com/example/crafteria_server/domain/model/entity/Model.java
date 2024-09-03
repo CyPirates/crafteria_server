@@ -1,6 +1,7 @@
 package com.example.crafteria_server.domain.model.entity;
 
 import com.example.crafteria_server.domain.file.entity.File;
+import com.example.crafteria_server.domain.user.entity.Author;
 import com.example.crafteria_server.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -17,6 +18,10 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Model extends BaseEntity {
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_id", nullable = false)
+    private Author author;
+
     @Column(nullable = false)
     private String name;
 

@@ -2,33 +2,50 @@ package com.example.crafteria_server.global.security;
 
 import com.example.crafteria_server.domain.user.entity.User;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 
-public record PrincipalDetails(
-        User user,
-        Map<String, Object> attributes,
-        String attributeKey) implements OAuth2User, UserDetails {
+public class PrincipalDetails implements UserDetails, OAuth2User {
+    private User user;
+    private Map<String, Object> attributes;
 
-    @Override
-    public String getName() {
-        return attributes.get(attributeKey).toString();
+    //일반 로그인 생성자
+    public PrincipalDetails(User user) {
+        this.user = user;
     }
 
+    public PrincipalDetails(User user, Map<String, Object> attributes ) {
+        this.user = user;
+        this.attributes = attributes;
+    }
+
+    /**
+     * OAuth2User 인터페이스 메소드
+     */
     @Override
     public Map<String, Object> getAttributes() {
         return attributes;
     }
 
+    /**
+     * UserDetails 인터페이스 메소드
+     */
+    // 해당 User의 권한을 리턴하는 곳!(role)
+    // SecurityFilterChain에서 권한을 체크할 때 사용됨
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(
-                new SimpleGrantedAuthority(user.getRole().getKey()));
+        Collection<GrantedAuthority> collection = new ArrayList();
+        collection.add(new GrantedAuthority() {
+            @Override
+            public String getAuthority() {
+                return String.valueOf(user.getRole().getKey());
+            }
+        });
+        return collection;
     }
 
     @Override
@@ -59,5 +76,14 @@ public record PrincipalDetails(
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    @Override
+    public String getName() {
+        return null;
+    }
+
+    public Long getUserId() {
+        return user.getId();
     }
 }
