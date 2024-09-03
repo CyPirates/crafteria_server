@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -40,12 +41,11 @@ public class Author {
     @JoinColumn(name = "profile_image_id")
     private File profileImage;
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "author_id")
-    private List<Model> models;
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Model> models = new ArrayList<>();
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @MapsId
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "author_id", referencedColumnName = "user_id")
     private User user;
 }

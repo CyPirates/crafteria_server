@@ -36,8 +36,6 @@ public class TokenProvider {
     private static final String KEY_ROLE = "role";
     private final TokenService tokenService;
     private final PrincipalService principalService;
-    private final CustomOAuth2UserService customOAuth2UserService;
-
     @PostConstruct
     private void setSecretKey() {
         secretKey = Keys.hmacShaKeyFor(key.getBytes());
@@ -54,6 +52,8 @@ public class TokenProvider {
     }
 
     private String generateToken(Authentication authentication, long expireTime) {
+        PrincipalDetails principalDetails = (PrincipalDetails) authentication.getPrincipal();
+
         Date now = new Date();
         Date expiredDate = new Date(now.getTime() + expireTime);
 
@@ -62,7 +62,7 @@ public class TokenProvider {
                 .collect(Collectors.joining());
 
         return Jwts.builder()
-                .subject(authentication.getName())
+                .subject(principalDetails.getUserId().toString())
                 .claim(KEY_ROLE, authorities)
                 .issuedAt(now)
                 .expiration(expiredDate)
@@ -73,11 +73,9 @@ public class TokenProvider {
     public Authentication getAuthentication(String token) {
         Claims claims = parseClaims(token);
         List<SimpleGrantedAuthority> authorities = getAuthorities(claims);
-        System.out.println(claims.get("email", String.class));
-
         // 2. security의 User 객체 생성
 //        User principal = new User(claims.getSubject(), "", authorities);
-        PrincipalDetails principalDetails = principalService.loadUserByUsername(claims.getSubject());
+        PrincipalDetails principalDetails = principalService.loadUserById(Long.parseLong(claims.getSubject()));
         return new UsernamePasswordAuthenticationToken(principalDetails, token, principalDetails.getAuthorities());
     }
 

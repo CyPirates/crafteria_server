@@ -28,9 +28,10 @@ public class UserModelController {
         return JsonBody.of(200, "성공", modelService.getModelDetail(modelId));
     }
 
-    @PostMapping("/model/upload")
-    public JsonBody<String /*UserModelDto.Response*/> uploadModel(/*@RequestBody UserModelDto.UploadRequest request, */@AuthenticationPrincipal PrincipalDetails principalDetails) {
-        log.info("userId: {}", principalDetails.getUserId());
-        return JsonBody.of(200, "성공", "GOOD");
+    @PostMapping(value = "/model/upload", consumes = "multipart/form-data", produces = "application/json")
+    public JsonBody<UserModelDto.Response> uploadModel(@AuthenticationPrincipal PrincipalDetails principalDetails, @ModelAttribute UserModelDto.UploadRequest request) {
+        return JsonBody.of(200, "성공", modelService.uploadModel(principalDetails.getUserId(), request));
     }
+
+
 }

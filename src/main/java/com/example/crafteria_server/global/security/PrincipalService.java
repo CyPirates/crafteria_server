@@ -19,4 +19,9 @@ public class PrincipalService implements UserDetailsService {
         return findUser.map(PrincipalDetails::new).orElse(null);
     }
 
+    public PrincipalDetails loadUserById(Long id) {
+        Optional<User> findUser = userRepository.findById(id);
+        return findUser.map(PrincipalDetails::new).orElse(null);
+    }
+
 }
