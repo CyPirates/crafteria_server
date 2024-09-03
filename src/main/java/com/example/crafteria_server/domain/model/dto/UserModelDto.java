@@ -12,7 +12,7 @@ public class UserModelDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class Response {
+    public static class ModelResponse {
         @NotNull
         @Schema(description = "모델 ID", example = "1")
         private Long id;
@@ -52,8 +52,8 @@ public class UserModelDto {
         @Schema(description = "모델 파일 URL", example = "http://localhost:8080/model/1")
         private String modelFileUrl;
 
-        public static Response from(Model model) {
-            return Response.builder()
+        public static ModelResponse from(Model model) {
+            return ModelResponse.builder()
                     .id(model.getId())
                     .name(model.getName())
                     .description(model.getDescription())
@@ -74,7 +74,7 @@ public class UserModelDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Schema(name = "모델 등록 요청", description = "모델 등록 요청", type = "multipartForm")
-    public static class UploadRequest {
+    public static class ModelUploadRequest {
         @NotNull
         @Schema(description = "모델 이름", example = "모델 이름")
         private String name;

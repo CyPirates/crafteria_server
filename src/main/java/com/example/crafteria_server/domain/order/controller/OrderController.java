@@ -20,20 +20,20 @@ public class OrderController {
     private final OrderService orderService;
 
     @GetMapping("/my")
-    public JsonBody<List<OrderDto.Response>> getMyOrderList(@AuthenticationPrincipal PrincipalDetails principalDetails,
-                                                            @RequestParam(defaultValue = "0") int page) {
+    public JsonBody<List<OrderDto.OrderResponse>> getMyOrderList(@AuthenticationPrincipal PrincipalDetails principalDetails,
+                                                                 @RequestParam(defaultValue = "0") int page) {
         return JsonBody.of(200, "성공", orderService.getMyOrderList(principalDetails.getUserId(), page));
     }
 
     @GetMapping("/my/{orderId}")
-    public JsonBody<OrderDto.Response> getOrderDetail(@AuthenticationPrincipal PrincipalDetails principalDetails,
-                                                     @PathVariable Long orderId) {
+    public JsonBody<OrderDto.OrderResponse> getOrderDetail(@AuthenticationPrincipal PrincipalDetails principalDetails,
+                                                           @PathVariable Long orderId) {
         return JsonBody.of(200, "성공", orderService.getOrderDetail(principalDetails.getUserId(), orderId));
     }
 
     @PostMapping("/create")
-    public JsonBody<OrderDto.Response> createOrder(@AuthenticationPrincipal PrincipalDetails principalDetails,
-                                                  @RequestBody OrderDto.CreateRequest request) {
+    public JsonBody<OrderDto.OrderResponse> createOrder(@AuthenticationPrincipal PrincipalDetails principalDetails,
+                                                        @RequestBody OrderDto.OrderRequest request) {
         return JsonBody.of(200, "성공", orderService.createOrder(principalDetails.getUserId(), request));
     }
 }
