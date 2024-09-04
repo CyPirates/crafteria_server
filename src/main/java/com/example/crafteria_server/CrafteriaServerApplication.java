@@ -3,6 +3,11 @@ package com.example.crafteria_server;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+@OpenAPIDefinition(
+        servers = {
+                @Server(url = "/", description = "Default Server url")
+        }
+)
 @SpringBootApplication
 public class CrafteriaServerApplication {
 
