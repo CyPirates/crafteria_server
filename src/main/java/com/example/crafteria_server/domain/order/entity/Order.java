@@ -1,5 +1,6 @@
 package com.example.crafteria_server.domain.order.entity;
 
+import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
 import com.example.crafteria_server.domain.model.entity.Model;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.global.entity.BaseEntity;
@@ -25,6 +26,10 @@ public class Order extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "model_id", nullable = false)
     private Model model;
+
+    @ManyToOne(fetch = FetchType.LAZY)  // Manufacturer와의 새로운 관계 설정
+    @JoinColumn(name = "manufacturer_id", nullable = false)  // Manufacturer 테이블의 외래 키 참조
+    private Manufacturer manufacturer;  // Manufacturer와의 관계 추가
 
     @Column(nullable = false)
     private long purchasePrice;
