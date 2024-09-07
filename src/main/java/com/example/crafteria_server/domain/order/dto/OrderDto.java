@@ -25,6 +25,10 @@ public class OrderDto {
         private long purchasePrice;
 
         @NotNull
+        @Schema(description = "제조사 ID", example = "1")
+        private long manufacturerId;  // 제조사 ID 추가
+
+        @NotNull
         @Schema(description = "배송 주소", example = "서울시 강남구 역삼동 123-456 101호")
         private String deliveryAddress;
 
@@ -52,6 +56,10 @@ public class OrderDto {
         @NotNull
         @Schema(description = "도면 ID", example = "1")
         private long modelId;
+
+        @NotNull
+        @Schema(description = "제조사 ID", example = "1")
+        private long manufacturerId;  // 제조사 ID 추가
 
         @NotNull
         @Schema(description = "도면 사이즈", example = "10")

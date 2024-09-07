@@ -63,7 +63,7 @@ public class ManufacturerController {
 
     // 제조사 업데이트
     @Operation(summary = "제조사 정보 수정", description = "제조사 정보를 수정.")
-    @PutMapping("/{id}")
+    @PutMapping(value ="{id}", consumes = "multipart/form-data")
     public ResponseEntity<JsonBody<ManufacturerDTO.ManufacturerResponse>> updateManufacturer(
             @PathVariable Long id,
             @ModelAttribute ManufacturerDTO.ManufacturerRequest manufacturerRequest) {
