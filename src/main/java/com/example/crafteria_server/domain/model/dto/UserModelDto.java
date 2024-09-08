@@ -1,6 +1,8 @@
 package com.example.crafteria_server.domain.model.dto;
 
 import com.example.crafteria_server.domain.model.entity.Model;
+import com.example.crafteria_server.domain.model.entity.ModelPurchase;
+import com.example.crafteria_server.domain.user.dto.AuthorDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -16,6 +18,10 @@ public class UserModelDto {
         @NotNull
         @Schema(description = "모델 ID", example = "1")
         private Long id;
+
+        @NotNull
+        @Schema(description = "작가 dto", example = "작가 dto")
+        private AuthorDto.AuthorResponse author;
 
         @NotNull
         @Schema(description = "모델 이름", example = "모델 이름")
@@ -55,6 +61,7 @@ public class UserModelDto {
         public static ModelResponse from(Model model) {
             return ModelResponse.builder()
                     .id(model.getId())
+                    .author(AuthorDto.AuthorResponse.from(model.getAuthor()))
                     .name(model.getName())
                     .description(model.getDescription())
                     .rating(model.getRating())
@@ -64,6 +71,22 @@ public class UserModelDto {
                     .minimumSize(model.getMinimumSize())
                     .maximumSize(model.getMaximumSize())
                     .modelFileUrl(model.getModelFile().getUrl())
+                    .build();
+        }
+
+        public static ModelResponse from(ModelPurchase modelPurchase) {
+            return ModelResponse.builder()
+                    .id(modelPurchase.getModel().getId())
+                    .author(AuthorDto.AuthorResponse.from(modelPurchase.getModel().getAuthor()))
+                    .name(modelPurchase.getModel().getName())
+                    .description(modelPurchase.getModel().getDescription())
+                    .rating(modelPurchase.getModel().getRating())
+                    .price(modelPurchase.getModel().getPrice())
+                    .viewCount(modelPurchase.getModel().getViewCount())
+                    .downloadCount(modelPurchase.getModel().getDownloadCount())
+                    .minimumSize(modelPurchase.getModel().getMinimumSize())
+                    .maximumSize(modelPurchase.getModel().getMaximumSize())
+                    .modelFileUrl(modelPurchase.getModel().getModelFile().getUrl())
                     .build();
         }
     }
@@ -94,6 +117,7 @@ public class UserModelDto {
         @Schema(description = "모델 최대 사이즈", example = "100")
         private int maximumSize;
 
+        @NotNull
         @Schema(description = "모델 파일", format = "binary")
         private MultipartFile modelFile;
     }

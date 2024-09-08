@@ -4,6 +4,8 @@ import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.domain.file.service.FileService;
 import com.example.crafteria_server.domain.model.dto.UserModelDto;
 import com.example.crafteria_server.domain.model.entity.Model;
+import com.example.crafteria_server.domain.model.entity.ModelPurchase;
+import com.example.crafteria_server.domain.model.repository.ModelPurchaseRepository;
 import com.example.crafteria_server.domain.model.repository.ModelRepository;
 import com.example.crafteria_server.domain.user.entity.Author;
 import com.example.crafteria_server.domain.user.entity.User;
@@ -28,6 +30,7 @@ public class ModelService {
     private final ModelRepository modelRepository;
     private final UserRepository userRepository;
     private final AuthorRepository authorRepository;
+    private final ModelPurchaseRepository modelPurchaseRepository;
     private final FileService fileService;
 
     public List<UserModelDto.ModelResponse> getPopularList(int page) {
@@ -75,4 +78,34 @@ public class ModelService {
         return UserModelDto.ModelResponse.from(modelRepository.save(newModel));
     }
 
+    public List<UserModelDto.ModelResponse> getMyDownloadedModelList(int page, Long userId) {
+        Pageable pageable = PageRequest.of(page, 10);
+        return modelPurchaseRepository.findAllByUserIdOrderByCreateDateDesc(userId, pageable).stream()
+                .map(UserModelDto.ModelResponse::from)
+                .toList();
+    }
+
+    public UserModelDto.ModelResponse purchaseModel(Long userId, Long modelId) {
+        User user = userRepository.findById(userId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+        Model model = modelRepository.findById(modelId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "모델을 찾을 수 없습니다."));
+        modelPurchaseRepository.findByUserIdAndModelId(userId, modelId).ifPresent(modelPurchase -> {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 구매한 모델입니다.");
+        });
+        modelPurchaseRepository.save(ModelPurchase.builder()
+                .user(user)
+                .model(model)
+                .build());
+        model.setDownloadCount(model.getDownloadCount() + 1);
+        return UserModelDto.ModelResponse.from(model);
+    }
+
+    public List<UserModelDto.ModelResponse> getMyUploadedModelList(int page, Long userId) {
+        Pageable pageable = PageRequest.of(page, 10);
+        return modelRepository.findAllByAuthorIdOrderByCreateDateDesc(userId, pageable).stream()
+                .map(UserModelDto.ModelResponse::from)
+                .toList();
+    }
 }
+
