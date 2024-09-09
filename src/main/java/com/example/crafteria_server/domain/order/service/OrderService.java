@@ -2,6 +2,8 @@ package com.example.crafteria_server.domain.order.service;
 
 
 import com.example.crafteria_server.domain.model.entity.Model;
+import com.example.crafteria_server.domain.model.entity.ModelPurchase;
+import com.example.crafteria_server.domain.model.repository.ModelPurchaseRepository;
 import com.example.crafteria_server.domain.model.repository.ModelRepository;
 import com.example.crafteria_server.domain.order.dto.OrderDto;
 import com.example.crafteria_server.domain.order.entity.Order;
@@ -26,6 +28,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrderService {
     private final OrderRepository orderRepository;
+    private final ModelPurchaseRepository modelPurchaseRepository;
     private final ModelRepository modelRepository;
     private final UserRepository userRepository;
 
@@ -45,15 +48,15 @@ public class OrderService {
     }
 
     public OrderDto.OrderResponse createOrder(Long userId, OrderDto.OrderRequest request) {
-        User user = userRepository.findById(userId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+        ModelPurchase modelPurchase = modelPurchaseRepository.findByUserIdAndModelId(userId, request.getModelId()).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "구매한 도면을 찾을 수 없습니다."));
 
-        Model model = modelRepository.findById(request.getModelId()).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
+        User user = modelPurchase.getUser();
+        Model model = modelPurchase.getModel();
 
-        if (model.getMinimumSize() > request.getModelSize() || model.getMaximumSize() < request.getModelSize()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "사이즈가 도면의 범위를 벗어납니다.");
-        }
+//        if (model.getMinimumSize() > request.getModelSize() || model.getMaximumSize() < request.getModelSize()) {
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "사이즈가 도면의 범위를 벗어납니다.");
+//        }
 
         Order order = Order.builder()
                 .model(model)

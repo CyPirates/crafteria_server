@@ -11,4 +11,6 @@ import org.springframework.stereotype.Repository;
 public interface ModelRepository extends JpaRepository<Model, Long> {
     @Query("SELECT m FROM Model m ORDER BY m.viewCount DESC")
     Page<Model> findAllOrderByViewCountDesc(Pageable pageable);
+
+    Page<Model> findAllByAuthorIdOrderByCreateDateDesc(Long userId, Pageable pageable);
 }
