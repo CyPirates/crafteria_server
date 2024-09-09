@@ -1,5 +1,6 @@
 package com.example.crafteria_server.domain.manufacturer.entity;
 
+import com.example.crafteria_server.domain.equipment.entity.Equipment;
 import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.global.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -8,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+
+import java.util.List;
 
 @Entity
 @Table(name = "manufacturer")
@@ -47,4 +50,7 @@ public class Manufacturer extends BaseEntity {
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "image")
     private File image;  // 대표 이미지, FK, BIGINT
+
+    @OneToMany(mappedBy = "manufacturer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Equipment> equipmentList;  // 제조사가 보유한 장비 리스트
 }

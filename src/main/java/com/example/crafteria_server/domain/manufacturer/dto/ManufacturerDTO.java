@@ -101,11 +101,9 @@ public class ManufacturerDTO {
         @Schema(description = "대표 장비", example = "creality 3D")
         private String representativeEquipment;
 
-
         @NotNull
         @Schema(description = "대표 이미지", example = "image.jpg")
         private MultipartFile image;
-
 
     }
 }
