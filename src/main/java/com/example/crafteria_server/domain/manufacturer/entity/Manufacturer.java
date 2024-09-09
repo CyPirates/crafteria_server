@@ -43,6 +43,7 @@ public class Manufacturer extends BaseEntity {
     @Column(name = "representative_equipment", length = 255)
     private String representativeEquipment;  // 대표 장비, VARCHAR(255)
 
+
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "image")
     private File image;  // 대표 이미지, FK, BIGINT

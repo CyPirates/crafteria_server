@@ -74,11 +74,11 @@ public class ManufacturerDTO {
     @Schema(name = "제조사 등록 요청", description = "제조사 등록 요청", type = "multipartForm")
     public static class ManufacturerRequest {
         @NotNull
-        @Schema(description = "제조사명", example = "삼성전자")
+        @Schema(description = "제조사명", example = "삼성프린트")
         private String name;
 
         @NotNull
-        @Schema(description = "제조사 소개", example = "삼성전자는 전자제품을 만드는 회사입니다.")
+        @Schema(description = "제조사 소개", example = "삼성프린트는 3D프린팅을 하는 회사입니다.")
         private String introduction;
 
         @NotNull
@@ -98,8 +98,9 @@ public class ManufacturerDTO {
         private Integer rating;
 
         @NotNull
-        @Schema(description = "대표 장비", example = "스마트폰")
+        @Schema(description = "대표 장비", example = "creality 3D")
         private String representativeEquipment;
+
 
         @NotNull
         @Schema(description = "대표 이미지", example = "image.jpg")

@@ -76,6 +76,10 @@ spring:
       port: 6379
       host: ${REDIS_HOST}
 
+  servlet:
+    multipart:
+      max-file-size: 100MB  # 업로드 가능한 최대 파일 크기
+      max-request-size: 100MB  # 업로드 가능한 최대 요청 크기
 
 server:
   port: ${SERVER_PORT}
