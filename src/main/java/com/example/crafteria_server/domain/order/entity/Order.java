@@ -42,5 +42,14 @@ public class Order extends BaseEntity {
     private String deliveryAddress;
 
     @Column(nullable = false)
-    private int modelSize;
+    private double widthSize;
+
+    @Column(nullable = false)
+    private double lengthSize;
+
+    @Column(nullable = false)
+    private double heightSize;
+
+    @Column(nullable = false)
+    private double magnification;
 }
