@@ -7,6 +7,7 @@ import com.example.crafteria_server.global.response.JsonBody;
 import com.example.crafteria_server.global.security.PrincipalDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,9 +32,10 @@ public class OrderController {
         return JsonBody.of(200, "성공", orderService.getOrderDetail(principalDetails.getUserId(), orderId));
     }
 
-    @PostMapping("/create")
-    public JsonBody<OrderDto.OrderResponse> createOrder(@AuthenticationPrincipal PrincipalDetails principalDetails,
-                                                        @RequestBody OrderDto.OrderRequest request) {
+    @PostMapping(value = "/create", consumes = "multipart/form-data")
+    public JsonBody<OrderDto.OrderResponse> createOrder(
+            @AuthenticationPrincipal PrincipalDetails principalDetails,
+            @ModelAttribute OrderDto.OrderRequest request) {
         return JsonBody.of(200, "성공", orderService.createOrder(principalDetails.getUserId(), request));
     }
 }

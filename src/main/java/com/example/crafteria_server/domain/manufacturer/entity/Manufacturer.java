@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -51,6 +52,6 @@ public class Manufacturer extends BaseEntity {
     @JoinColumn(name = "image")
     private File image;  // 대표 이미지, FK, BIGINT
 
-    @OneToMany(mappedBy = "manufacturer", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Equipment> equipmentList;  // 제조사가 보유한 장비 리스트
+    @OneToMany(mappedBy = "manufacturer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Equipment> equipmentList = new ArrayList<>();  // 제조사가 보유한 장비 리스트
 }

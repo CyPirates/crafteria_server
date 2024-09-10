@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -69,9 +70,11 @@ public class ManufacturerDTO {
                     .rating(manufacturer.getRating())
                     .representativeEquipment(manufacturer.getRepresentativeEquipment())
                     .imageFileUrl(manufacturer.getImage().getUrl())
-                    .equipmentList(manufacturer.getEquipmentList().stream()
-                    .map(EquipmentDto.EquipmentResponse::from)
-                    .collect(Collectors.toList()))
+                    .equipmentList(manufacturer.getEquipmentList() != null ?
+                            manufacturer.getEquipmentList().stream()
+                                    .map(EquipmentDto.EquipmentResponse::from)
+                                    .collect(Collectors.toList())
+                            : Collections.emptyList())
                     .build();
         }
 

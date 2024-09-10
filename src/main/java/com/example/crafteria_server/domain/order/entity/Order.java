@@ -1,5 +1,6 @@
 package com.example.crafteria_server.domain.order.entity;
 
+import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
 import com.example.crafteria_server.domain.model.entity.Model;
 import com.example.crafteria_server.domain.user.entity.User;
@@ -23,9 +24,13 @@ public class Order extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "model_file_id")
+    private File modelFile;
+
+    /*@ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "model_id", nullable = false)
-    private Model model;
+    private Model model;*/
 
     @ManyToOne(fetch = FetchType.LAZY)  // Manufacturer와의 새로운 관계 설정
     @JoinColumn(name = "manufacturer_id", nullable = false)  // Manufacturer 테이블의 외래 키 참조
@@ -49,6 +54,9 @@ public class Order extends BaseEntity {
 
     @Column(nullable = false)
     private double heightSize;
+
+    @Column(nullable = false)
+    private int quantity;
 
     @Column(nullable = false)
     private double magnification;
