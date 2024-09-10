@@ -72,7 +72,7 @@ public class ModelService {
                 .downloadCount(0)
                 .widthSize(request.getWidthSize())
                 .lengthSize(request.getLengthSize())
-                .magnification(request.getMagnification())
+                .heightSize(request.getHeightSize())
                 .modelFile(modelFile)
                 .build();
 

@@ -63,7 +63,10 @@ public class OrderService {
                 .user(user)
                 .deliveryAddress(request.getDeliveryAddress())
                 .status(OrderStatus.ORDERED)
-                .modelSize(request.getModelSize())
+                .widthSize(request.getWidthSize())
+                .lengthSize(request.getLengthSize())
+                .heightSize(request.getHeightSize())
+                .magnification(request.getMagnification())
                 .purchasePrice(model.getPrice())
                 .build();
 

@@ -29,6 +29,22 @@ public class OrderDto {
         private long manufacturerId;  // 제조사 ID 추가
 
         @NotNull
+        @Schema(description = "가로 사이즈", example = "10.0")
+        private double widthSize;
+
+        @NotNull
+        @Schema(description = "세로 사이즈", example = "10.0")
+        private double lengthSize;
+
+        @NotNull
+        @Schema(description = "높이 사이즈", example = "10.0")
+        private double heightSize;
+
+        @NotNull
+        @Schema(description = "배율" , example = "1.0")
+        private double magnification;
+
+        @NotNull
         @Schema(description = "배송 주소", example = "서울시 강남구 역삼동 123-456 101호")
         private String deliveryAddress;
 
@@ -42,6 +58,10 @@ public class OrderDto {
                     .modelId(order.getModel().getId())
                     .purchasePrice(order.getPurchasePrice())
                     .deliveryAddress(order.getDeliveryAddress())
+                    .manufacturerId(order.getManufacturer().getId())  // 제조사 ID 추가
+                    .widthSize(order.getWidthSize())
+                    .lengthSize(order.getLengthSize())
+                    .heightSize(order.getHeightSize())
                     .status(order.getStatus().name())
                     .build();
         }
@@ -62,8 +82,20 @@ public class OrderDto {
         private long manufacturerId;  // 제조사 ID 추가
 
         @NotNull
-        @Schema(description = "도면 사이즈", example = "10")
-        private int modelSize;
+        @Schema(description = "가로 사이즈", example = "10.0")
+        private double widthSize;
+
+        @NotNull
+        @Schema(description = "세로 사이즈", example = "10.0")
+        private double lengthSize;
+
+        @NotNull
+        @Schema(description = "높이 사이즈", example = "10.0")
+        private double heightSize;
+
+        @NotNull
+        @Schema(description = "배율" , example = "1.0")
+        private double magnification;
 
         @NotNull
         @Schema(description = "배송지", example = "서울시 강남구 역삼동 123-456 101호")

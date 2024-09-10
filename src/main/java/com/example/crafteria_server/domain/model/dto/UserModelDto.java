@@ -48,15 +48,15 @@ public class UserModelDto {
 
         @NotNull
         @Schema(description = "모델 가로 사이즈", example = "10")
-        private int widthSize;
+        private double widthSize;
 
         @NotNull
-        @Schema(description = "모델 세로 사이즈", example = "100")
-        private int lengthSize;
+        @Schema(description = "모델 세로 사이즈", example = "10")
+        private double lengthSize;
 
         @NotNull
-        @Schema(description = "모델 배율", example = "1.2")
-        private double magnification;
+        @Schema(description = "모델 높이 사이즈", example = "100")
+        private double heightSize;
 
         @NotNull
         @Schema(description = "모델 파일 URL", example = "http://localhost:8080/model/1")
@@ -74,7 +74,7 @@ public class UserModelDto {
                     .downloadCount(model.getDownloadCount())
                     .widthSize(model.getWidthSize())
                     .lengthSize(model.getLengthSize())
-                    .magnification(model.getMagnification())
+                    .heightSize(model.getHeightSize())
                     .modelFileUrl(model.getModelFile().getUrl())
                     .build();
         }
@@ -91,7 +91,7 @@ public class UserModelDto {
                     .downloadCount(modelPurchase.getModel().getDownloadCount())
                     .widthSize(modelPurchase.getModel().getWidthSize())
                     .lengthSize(modelPurchase.getModel().getLengthSize())
-                    .magnification(modelPurchase.getModel().getMagnification())
+                    .heightSize(modelPurchase.getModel().getHeightSize())
                     .modelFileUrl(modelPurchase.getModel().getModelFile().getUrl())
                     .build();
         }
@@ -124,8 +124,8 @@ public class UserModelDto {
         private int lengthSize;
 
         @NotNull
-        @Schema(description = "모델 배율", example = "1.2")
-        private double magnification;
+        @Schema(description = "모델 높이 사이즈", example = "100")
+        private int heightSize;
 
         @NotNull
         @Schema(description = "모델 파일", format = "binary")

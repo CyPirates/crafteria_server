@@ -42,10 +42,13 @@ public class Model extends BaseEntity {
     private long downloadCount = 0;
 
     @Column(nullable = false)
-    private int widthSize;
+    private double widthSize;
 
     @Column(nullable = false)
-    private int lengthSize;
+    private double lengthSize;
+
+    @Column(nullable = false)
+    private double heightSize;
 
     @Column(nullable = false)
     private double magnification;
