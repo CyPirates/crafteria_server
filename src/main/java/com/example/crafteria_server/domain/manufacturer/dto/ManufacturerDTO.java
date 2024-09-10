@@ -1,11 +1,15 @@
 package com.example.crafteria_server.domain.manufacturer.dto;
 
 
+import com.example.crafteria_server.domain.equipment.dto.EquipmentDto;
 import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ManufacturerDTO {
 
@@ -51,6 +55,9 @@ public class ManufacturerDTO {
         @Schema(description = "모델 파일 URL", example = "http://localhost:8080/image/1")
         private String imageFileUrl;
 
+        @Schema(description = "장비 리스트")
+        private List<EquipmentDto.EquipmentResponse> equipmentList;
+
         public static ManufacturerResponse from(Manufacturer manufacturer) {
             return ManufacturerResponse.builder()
                     .id(manufacturer.getId())
@@ -62,6 +69,9 @@ public class ManufacturerDTO {
                     .rating(manufacturer.getRating())
                     .representativeEquipment(manufacturer.getRepresentativeEquipment())
                     .imageFileUrl(manufacturer.getImage().getUrl())
+                    .equipmentList(manufacturer.getEquipmentList().stream()
+                    .map(EquipmentDto.EquipmentResponse::from)
+                    .collect(Collectors.toList()))
                     .build();
         }
 

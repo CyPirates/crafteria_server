@@ -47,12 +47,16 @@ public class UserModelDto {
         private long downloadCount;
 
         @NotNull
-        @Schema(description = "모델 최소 사이즈", example = "10")
-        private int minimumSize;
+        @Schema(description = "모델 가로 사이즈", example = "10")
+        private int widthSize;
 
         @NotNull
-        @Schema(description = "모델 최대 사이즈", example = "100")
-        private int maximumSize;
+        @Schema(description = "모델 세로 사이즈", example = "100")
+        private int lengthSize;
+
+        @NotNull
+        @Schema(description = "모델 배율", example = "1.2")
+        private double magnification;
 
         @NotNull
         @Schema(description = "모델 파일 URL", example = "http://localhost:8080/model/1")
@@ -68,8 +72,9 @@ public class UserModelDto {
                     .price(model.getPrice())
                     .viewCount(model.getViewCount())
                     .downloadCount(model.getDownloadCount())
-                    .minimumSize(model.getMinimumSize())
-                    .maximumSize(model.getMaximumSize())
+                    .widthSize(model.getWidthSize())
+                    .lengthSize(model.getLengthSize())
+                    .magnification(model.getMagnification())
                     .modelFileUrl(model.getModelFile().getUrl())
                     .build();
         }
@@ -84,8 +89,9 @@ public class UserModelDto {
                     .price(modelPurchase.getModel().getPrice())
                     .viewCount(modelPurchase.getModel().getViewCount())
                     .downloadCount(modelPurchase.getModel().getDownloadCount())
-                    .minimumSize(modelPurchase.getModel().getMinimumSize())
-                    .maximumSize(modelPurchase.getModel().getMaximumSize())
+                    .widthSize(modelPurchase.getModel().getWidthSize())
+                    .lengthSize(modelPurchase.getModel().getLengthSize())
+                    .magnification(modelPurchase.getModel().getMagnification())
                     .modelFileUrl(modelPurchase.getModel().getModelFile().getUrl())
                     .build();
         }
@@ -110,12 +116,16 @@ public class UserModelDto {
         private long price;
 
         @NotNull
-        @Schema(description = "모델 최소 사이즈", example = "10")
-        private int minimumSize;
+        @Schema(description = "모델 가로 사이즈", example = "10")
+        private int widthSize;
 
         @NotNull
-        @Schema(description = "모델 최대 사이즈", example = "100")
-        private int maximumSize;
+        @Schema(description = "모델 세로 사이즈", example = "100")
+        private int lengthSize;
+
+        @NotNull
+        @Schema(description = "모델 배율", example = "1.2")
+        private double magnification;
 
         @NotNull
         @Schema(description = "모델 파일", format = "binary")
