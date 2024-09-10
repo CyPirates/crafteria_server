@@ -42,10 +42,13 @@ public class Model extends BaseEntity {
     private long downloadCount = 0;
 
     @Column(nullable = false)
-    private int minimumSize;
+    private int widthSize;
 
     @Column(nullable = false)
-    private int maximumSize;
+    private int lengthSize;
+
+    @Column(nullable = false)
+    private double magnification;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "model_file_id")

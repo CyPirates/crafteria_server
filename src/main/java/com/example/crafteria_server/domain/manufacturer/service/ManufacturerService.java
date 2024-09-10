@@ -28,7 +28,10 @@ public class ManufacturerService {
     public ManufacturerDTO.ManufacturerResponse createManufacturer(ManufacturerDTO.ManufacturerRequest request) {
         // MultipartFile을 File 엔티티로 변환하여 저장
         MultipartFile imageFile = request.getImage();
-        File savedFile = fileService.saveImage(imageFile);  // 이미지 저장
+        File savedFile = null;
+        if (imageFile != null && !imageFile.isEmpty()) {
+            savedFile = fileService.saveImage(imageFile);  // 이미지 저장
+        }
 
         // Manufacturer 엔티티 생성
         Manufacturer manufacturer = Manufacturer.builder()
@@ -51,13 +54,29 @@ public class ManufacturerService {
 
     // 제조사 조회
     public ManufacturerDTO.ManufacturerResponse getManufacturerById(Long id) {
-        Optional<Manufacturer> manufacturer = manufacturerRepository.findById(id);
-        return manufacturer.map(ManufacturerDTO.ManufacturerResponse::from).orElse(null);
+        Optional<Manufacturer> optionalManufacturer = manufacturerRepository.findById(id);
+
+        if (optionalManufacturer.isEmpty()) {
+            return null;
+        }
+
+        Manufacturer manufacturer = optionalManufacturer.get();
+
+        // LazyInitializationException 방지: equipmentList 초기화
+        manufacturer.getEquipmentList().size();
+
+        return ManufacturerDTO.ManufacturerResponse.from(manufacturer);
     }
 
     // 모든 제조사 조회
     public List<ManufacturerDTO.ManufacturerResponse> getAllManufacturers() {
         List<Manufacturer> manufacturers = manufacturerRepository.findAll();
+
+        // 각 제조사의 equipmentList 초기화
+        for (Manufacturer manufacturer : manufacturers) {
+            manufacturer.getEquipmentList().size();
+        }
+
         return manufacturers.stream()
                 .map(ManufacturerDTO.ManufacturerResponse::from)
                 .collect(Collectors.toList());
@@ -69,7 +88,7 @@ public class ManufacturerService {
                 .orElseThrow(() -> new RuntimeException("Manufacturer not found"));
 
         // 기존 이미지 파일이 있으면 삭제하고 새로운 파일로 대체
-        if (request.getImage() != null) {
+        if (request.getImage() != null && !request.getImage().isEmpty()) {
             if (manufacturer.getImage() != null) {
                 fileService.deleteFile(manufacturer.getImage());
             }
@@ -88,6 +107,9 @@ public class ManufacturerService {
 
         // Manufacturer 엔티티 저장
         Manufacturer updatedManufacturer = manufacturerRepository.save(manufacturer);
+
+        // equipmentList 초기화
+        updatedManufacturer.getEquipmentList().size();
 
         // 응답 DTO로 변환하여 반환
         return ManufacturerDTO.ManufacturerResponse.from(updatedManufacturer);

@@ -70,8 +70,9 @@ public class ModelService {
                 .price(request.getPrice())
                 .viewCount(0)
                 .downloadCount(0)
-                .minimumSize(request.getMinimumSize())
-                .maximumSize(request.getMaximumSize())
+                .widthSize(request.getWidthSize())
+                .lengthSize(request.getLengthSize())
+                .magnification(request.getMagnification())
                 .modelFile(modelFile)
                 .build();
 
