@@ -70,7 +70,7 @@ public class OrderDto {
                     .widthSize(order.getWidthSize())
                     .lengthSize(order.getLengthSize())
                     .heightSize(order.getHeightSize())
-                    .status(order.getStatus().name())
+                    .status(order.getStatus().getKey())
                     .quantity(order.getQuantity())
                     .modelFileUrl(order.getModelFile().getUrl())
                     .build();

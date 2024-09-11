@@ -38,4 +38,18 @@ public class OrderController {
             @ModelAttribute OrderDto.OrderRequest request) {
         return JsonBody.of(200, "성공", orderService.createOrder(principalDetails.getUserId(), request));
     }
+
+    @PostMapping("/my/cancel/{orderId}")
+    public JsonBody<OrderDto.OrderResponse> cancelOrder(@AuthenticationPrincipal PrincipalDetails principalDetails,
+                                        @PathVariable Long orderId) {
+        return JsonBody.of(200, "주문이 취소되었습니다.", orderService.cancelOrderByUser(principalDetails.getUserId(), orderId));
+    }
+
+    @PostMapping("/manufacturer/change-status/{orderId}")
+    public JsonBody<OrderDto.OrderResponse> changeOrderStatus(@RequestParam Long manufacturerId,
+                                              @RequestParam String newStatusKey,
+                                              @PathVariable Long orderId) {
+
+        return JsonBody.of(200, "주문 상태가 변경되었습니다.",orderService.changeOrderStatusByManufacturer(manufacturerId, orderId, newStatusKey));
+    }
 }
