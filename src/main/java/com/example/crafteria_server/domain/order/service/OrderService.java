@@ -123,4 +123,22 @@ public class OrderService {
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "잘못된 상태입니다."));
     }
+
+    public List<OrderDto.OrderResponse> getOrderedOrdersByManufacturer(Long manufacturerId) {
+        List<Order> orders = orderRepository.findByManufacturerIdAndStatus(manufacturerId, OrderStatus.ORDERED);
+
+        // 주문 엔티티를 DTO로 변환하여 반환
+        return orders.stream()
+                .map(OrderDto.OrderResponse::from)
+                .toList();
+    }
+
+    public List<OrderDto.OrderResponse> getAllOrdersByManufacturer(Long manufacturerId) {
+        List<Order> orders = orderRepository.findByManufacturerId(manufacturerId);
+
+        // 주문 엔티티를 DTO로 변환하여 반환
+        return orders.stream()
+                .map(OrderDto.OrderResponse::from)
+                .toList();
+    }
 }

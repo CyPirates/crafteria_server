@@ -14,6 +14,10 @@ public class OrderDto {
     @AllArgsConstructor
     public static class OrderResponse {
         @NotNull
+        @Schema(description = "주문 ID", example = "1")
+        private Long orderId;
+
+        @NotNull
         @Schema(description = "유저 ID", example = "1")
         private long userId;
 
@@ -63,6 +67,7 @@ public class OrderDto {
 
         public static OrderResponse from(Order order) {
             return OrderResponse.builder()
+                    .orderId(order.getId())
                     .userId(order.getUser().getId())
                     .purchasePrice(order.getPurchasePrice())
                     .deliveryAddress(order.getDeliveryAddress())
