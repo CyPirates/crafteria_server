@@ -117,15 +117,15 @@ public class UserModelDto {
 
         @NotNull
         @Schema(description = "모델 가로 사이즈", example = "10")
-        private int widthSize;
+        private double widthSize;
 
         @NotNull
         @Schema(description = "모델 세로 사이즈", example = "100")
-        private int lengthSize;
+        private double lengthSize;
 
         @NotNull
         @Schema(description = "모델 높이 사이즈", example = "100")
-        private int heightSize;
+        private double heightSize;
 
         @NotNull
         @Schema(description = "모델 파일", format = "binary")
