@@ -68,8 +68,5 @@ public class EquipmentDto {
         @Schema(description = "제조사 id", example = "1")
         private Long manufacturerId;
 
-        @Builder.Default
-        @Schema(description = "장비 상태", example = "Available/InUse")
-        private String status = "Available";  // 기본값 설정
     }
 }

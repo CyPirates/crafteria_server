@@ -2,6 +2,7 @@ package com.example.crafteria_server.domain.equipment.controller;
 
 import com.example.crafteria_server.domain.equipment.dto.EquipmentDto;
 import com.example.crafteria_server.domain.equipment.entity.Equipment;
+import com.example.crafteria_server.domain.equipment.entity.EquipmentStatus;
 import com.example.crafteria_server.domain.equipment.service.EquipmentService;
 import com.example.crafteria_server.global.response.JsonBody;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,7 +34,7 @@ public class EquipmentController {
 
         EquipmentDto.EquipmentResponse response = equipmentService.createEquipment(equipmentRequest);
         return ResponseEntity
-                .status(HttpStatus.CREATED)  // HTTP 상태 코드 201 설정
+                .status(HttpStatus.CREATED)
                 .body(JsonBody.of(201, "장비 생성 성공", response));
     }
 
@@ -85,5 +86,18 @@ public class EquipmentController {
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)  // HTTP 상태 코드 204 설정
                 .body(JsonBody.of(204, "장비 삭제 성공", null));
+    }
+
+    // 장비 상태 변경 API 추가
+    @Operation(summary = "장비 상태 변경", description = "장비 상태를 변경합니다.")
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<JsonBody<EquipmentDto.EquipmentResponse>> updateEquipmentStatus(
+            @PathVariable Long id,
+            @RequestParam EquipmentStatus status) {
+
+        EquipmentDto.EquipmentResponse response = equipmentService.updateEquipmentStatus(id, status);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(JsonBody.of(200, "장비 상태 수정 성공", response));
     }
 }
