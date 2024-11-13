@@ -30,30 +30,24 @@ public class EquipmentService {
 
     // 장비 등록
     public EquipmentDto.EquipmentResponse createEquipment(EquipmentDto.EquipmentRequest request) {
-        // MultipartFile을 File 엔티티로 변환하여 저장
         MultipartFile imageFile = request.getImage();
         File savedFile = null;
         if (imageFile != null && !imageFile.isEmpty()) {
-            savedFile = fileService.saveImage(imageFile);  // 이미지 저장
+            savedFile = fileService.saveImage(imageFile);
         }
 
-        // Manufacturer 엔티티 조회
         Manufacturer manufacturer = manufacturerRepository.findById(request.getManufacturerId())
                 .orElseThrow(() -> new RuntimeException("Manufacturer not found"));
 
-        // Equipment 엔티티 생성
         Equipment equipment = Equipment.builder()
                 .name(request.getName())
                 .description(request.getDescription())
-                .status(EquipmentStatus.valueOf(request.getStatus()))  // Enum 변환
+                .status(EquipmentStatus.Available)  // 기본값으로 상태 설정
                 .manufacturer(manufacturer)
-                .image(savedFile)  // 저장된 이미지 파일을 Equipment에 설정
+                .image(savedFile)
                 .build();
 
-        // Equipment 엔티티 저장
         Equipment savedEquipment = equipmentRepository.save(equipment);
-
-        // 응답 DTO로 변환하여 반환
         return EquipmentDto.EquipmentResponse.from(savedEquipment);
     }
 
@@ -84,16 +78,15 @@ public class EquipmentService {
                 .collect(Collectors.toList());
     }
 
-    // 장비 업데이트
+    // 장비 수정
     public EquipmentDto.EquipmentResponse updateEquipment(Long id, EquipmentDto.EquipmentRequest request) {
         Equipment equipment = equipmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Equipment not found"));
 
-        // Manufacturer 조회
         Manufacturer manufacturer = manufacturerRepository.findById(request.getManufacturerId())
                 .orElseThrow(() -> new RuntimeException("Manufacturer not found"));
 
-        // 기존 이미지 파일이 있으면 삭제하고 새로운 파일로 대체
+        // 이미지 업데이트
         if (request.getImage() != null && !request.getImage().isEmpty()) {
             if (equipment.getImage() != null) {
                 fileService.deleteFile(equipment.getImage());
@@ -105,13 +98,9 @@ public class EquipmentService {
         // 기타 필드 업데이트
         equipment.setName(request.getName());
         equipment.setDescription(request.getDescription());
-        equipment.setStatus(EquipmentStatus.valueOf(request.getStatus()));  // Enum 변환
         equipment.setManufacturer(manufacturer);
 
-        // Equipment 엔티티 저장
         Equipment updatedEquipment = equipmentRepository.save(equipment);
-
-        // 응답 DTO로 변환하여 반환
         return EquipmentDto.EquipmentResponse.from(updatedEquipment);
     }
 
@@ -127,6 +116,17 @@ public class EquipmentService {
 
         // Equipment 엔티티 삭제
         equipmentRepository.delete(equipment);
+    }
+
+    // 장비 상태 업데이트
+    public EquipmentDto.EquipmentResponse updateEquipmentStatus(Long id, EquipmentStatus status) {
+        Equipment equipment = equipmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Equipment not found"));
+
+        equipment.setStatus(status);
+        Equipment updatedEquipment = equipmentRepository.save(equipment);
+
+        return EquipmentDto.EquipmentResponse.from(updatedEquipment);
     }
 }
 

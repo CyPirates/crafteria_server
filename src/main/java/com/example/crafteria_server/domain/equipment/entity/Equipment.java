@@ -32,7 +32,7 @@ public class Equipment extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private EquipmentStatus status;  // 장비 상태 (출력중, 사용가능)
+    private EquipmentStatus status = EquipmentStatus.Available;  // 장비 상태 (출력중, 사용가능)
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "image")
