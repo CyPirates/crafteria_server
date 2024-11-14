@@ -28,6 +28,10 @@ public class Author {
     @Column(nullable = false)
     private int rating = 5;
 
+    // 추가된 realname 필드
+    @Column(name = "realname")
+    private String realname;
+
     @Column()
     private String introduction;
 
@@ -48,4 +52,12 @@ public class Author {
     @MapsId
     @JoinColumn(name = "author_id", referencedColumnName = "user_id")
     private User user;
+
+    // User의 realname을 Author의 realname으로 설정하는 메서드
+    public void setUser(User user) {
+        this.user = user;
+        if (user != null) {
+            this.realname = user.getRealname();
+        }
+    }
 }

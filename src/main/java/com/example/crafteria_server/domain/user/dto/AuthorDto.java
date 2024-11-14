@@ -17,6 +17,10 @@ public class AuthorDto {
         private Long id;
 
         @NotNull
+        @Schema(description = "작가 이름" , example = "이찬호")
+        private String name;
+
+        @NotNull
         @Schema(description = "작가 평점", example = "5")
         private int rating;
 
@@ -38,6 +42,7 @@ public class AuthorDto {
             String profileImageUrl = author.getProfileImage() == null ? null : author.getProfileImage().getUrl();
             return AuthorResponse.builder()
                     .id(author.getId())
+                    .name(author.getRealname())
                     .rating(author.getRating())
                     .introduction(author.getIntroduction())
                     .modelCount(author.getModelCount())

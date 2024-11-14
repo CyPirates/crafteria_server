@@ -51,13 +51,25 @@ public class ModelService {
         User user = userRepository.findById(userId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
         log.info("userid: {}", user.getId());
-        Author author = authorRepository.findById(user.getId()).orElse(Author.builder()
-                .user(user)
-                .id(user.getId())
-                .rating(5)
-                .modelCount(0)
-                .viewCount(0)
-                .build());
+
+        // Author 엔티티를 가져오거나 없으면 생성
+        Author author = authorRepository.findById(user.getId()).orElseGet(() -> {
+            Author newAuthor = Author.builder()
+                    .user(user)
+                    .id(user.getId())
+                    .realname(user.getRealname())  // User의 realname을 Author의 realname에 복사
+                    .rating(5)
+                    .modelCount(0)
+                    .viewCount(0)
+                    .build();
+            return newAuthor;
+        });
+
+        // Author가 새로 생성되었거나 기존 Author의 realname이 없을 경우 업데이트
+        if (author.getRealname() == null) {
+            author.setRealname(user.getRealname());
+        }
+
         authorRepository.save(author);
 
         File modelFile = fileService.saveModel(request.getModelFile());
