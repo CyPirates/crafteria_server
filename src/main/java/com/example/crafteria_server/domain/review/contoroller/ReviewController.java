@@ -6,6 +6,7 @@ import com.example.crafteria_server.global.response.JsonBody;
 import com.example.crafteria_server.global.security.PrincipalDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -18,22 +19,22 @@ import java.util.List;
 public class ReviewController {
     private final ReviewService reviewService;
 
-    @Operation(summary = "제조업체 리뷰 작성", description = "주문 완료된 제조업체에 대해 리뷰를 작성합니다.")
-    @PostMapping
+    @Operation(summary = "제조업체 리뷰 작성", description = "주문 완료된 제조업체에 대해 최대 3개의 이미지 파일을 첨부하여 리뷰를 작성합니다.")
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<JsonBody<ReviewDto.ReviewResponseDto>> addReview(
             @AuthenticationPrincipal PrincipalDetails principalDetails,
-            @RequestBody ReviewDto.ReviewRequestDto requestDto) {
+            @ModelAttribute ReviewDto.ReviewRequestDto requestDto) {
 
         ReviewDto.ReviewResponseDto responseDto = reviewService.addReview(principalDetails.getUserId(), requestDto);
         return ResponseEntity.ok(JsonBody.of(200, "리뷰가 작성되었습니다.", responseDto));
     }
 
-    @Operation(summary = "제조업체 리뷰 수정", description = "본인이 작성한 제조업체 리뷰를 수정합니다.")
-    @PutMapping("/{reviewId}")
+    @Operation(summary = "제조업체 리뷰 수정", description = "본인이 작성한 제조업체 리뷰를 최대 3개의 이미지 파일과 함께 수정합니다.")
+    @PutMapping(value = "/{reviewId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<JsonBody<ReviewDto.ReviewResponseDto>> updateReview(
             @AuthenticationPrincipal PrincipalDetails principalDetails,
             @PathVariable Long reviewId,
-            @RequestBody ReviewDto.ReviewRequestDto requestDto) {
+            @ModelAttribute ReviewDto.ReviewRequestDto requestDto) {
 
         ReviewDto.ReviewResponseDto responseDto = reviewService.updateReview(principalDetails.getUserId(), reviewId, requestDto);
         return ResponseEntity.ok(JsonBody.of(200, "리뷰가 수정되었습니다.", responseDto));
