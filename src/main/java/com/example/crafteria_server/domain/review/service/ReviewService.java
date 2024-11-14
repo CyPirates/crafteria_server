@@ -1,5 +1,7 @@
 package com.example.crafteria_server.domain.review.service;
 
+import com.example.crafteria_server.domain.file.entity.File;
+import com.example.crafteria_server.domain.file.service.FileService;
 import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
 import com.example.crafteria_server.domain.manufacturer.repository.ManufacturerRepository;
 import com.example.crafteria_server.domain.model.entity.Model;
@@ -15,10 +17,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -28,21 +32,24 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ManufacturerRepository manufacturerRepository;
     private final UserRepository userRepository;
+    private final FileService fileService;
 
     public ReviewDto.ReviewResponseDto addReview(Long userId, ReviewDto.ReviewRequestDto requestDto) {
         Manufacturer manufacturer = manufacturerRepository.findById(requestDto.getManufacturerId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조업체를 찾을 수 없습니다."));
 
-        // 주문 완료 여부 확인
         orderRepository.findByUserIdAndManufacturerIdAndStatus(userId, requestDto.getManufacturerId(), OrderStatus.DELIVERED)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "해당 제조업체에 주문 완료된 유저만 리뷰를 남길 수 있습니다."));
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
 
+        List<File> images = saveImages(requestDto.getImageFiles());
+
         Review review = Review.builder()
                 .user(user)
                 .manufacturer(manufacturer)
+                .images(images)
                 .content(requestDto.getContent())
                 .rating(requestDto.getRating())
                 .createdAt(LocalDateTime.now())
@@ -51,7 +58,13 @@ public class ReviewService {
         reviewRepository.save(review);
         updateManufacturerRating(manufacturer);
 
-        return new ReviewDto.ReviewResponseDto(review.getId(), review.getContent(), review.getRating(), review.getCreatedAt());
+        return new ReviewDto.ReviewResponseDto(
+                review.getId(),
+                review.getContent(),
+                review.getRating(),
+                review.getCreatedAt(),
+                images.stream().map(File::getUrl).collect(Collectors.toList()) // 이미지 URI 리스트
+        );
     }
 
     public ReviewDto.ReviewResponseDto updateReview(Long userId, Long reviewId, ReviewDto.ReviewRequestDto requestDto) {
@@ -62,12 +75,26 @@ public class ReviewService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인의 리뷰만 수정할 수 있습니다.");
         }
 
+        // 기존 이미지 파일 삭제
+        fileService.deleteFiles(review.getImages());
+
+        // 기존 리스트에서 직접 수정하지 않고, 새 이미지 리스트를 추가하는 방식으로 변경
+        List<File> newImages = saveImages(requestDto.getImageFiles());
+        review.getImages().clear();  // 기존 이미지 리스트를 비웁니다.
+        review.getImages().addAll(newImages);  // 새 이미지 리스트를 추가합니다.
+
         review.setContent(requestDto.getContent());
         review.setRating(requestDto.getRating());
         reviewRepository.save(review);
         updateManufacturerRating(review.getManufacturer());
 
-        return new ReviewDto.ReviewResponseDto(review.getId(), review.getContent(), review.getRating(), review.getCreatedAt());
+        return new ReviewDto.ReviewResponseDto(
+                review.getId(),
+                review.getContent(),
+                review.getRating(),
+                review.getCreatedAt(),
+                newImages.stream().map(File::getUrl).collect(Collectors.toList()) // 이미지 URI 리스트
+        );
     }
 
     public void deleteReview(Long userId, Long reviewId) {
@@ -78,24 +105,19 @@ public class ReviewService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인의 리뷰만 삭제할 수 있습니다.");
         }
 
-        Manufacturer manufacturer = review.getManufacturer();
+        fileService.deleteFiles(review.getImages());
         reviewRepository.delete(review);
-        updateManufacturerRating(manufacturer);
+        updateManufacturerRating(review.getManufacturer());
     }
 
-    public List<ReviewDto.ReviewResponseDto> getReviewsByManufacturer(Long manufacturerId) {
-        Manufacturer manufacturer = manufacturerRepository.findById(manufacturerId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조업체를 찾을 수 없습니다."));
 
-        List<Review> reviews = reviewRepository.findByManufacturer(manufacturer);
-
-        return reviews.stream()
-                .map(review -> new ReviewDto.ReviewResponseDto(
-                        review.getId(),
-                        review.getContent(),
-                        review.getRating(),
-                        review.getCreatedAt()))
-                .toList();
+    private List<File> saveImages(List<MultipartFile> imageFiles) {
+        if (imageFiles == null || imageFiles.size() > 3) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미지 파일은 최대 3개까지 첨부할 수 있습니다.");
+        }
+        return imageFiles.stream()
+                .map(fileService::saveImage)
+                .collect(Collectors.toList());
     }
 
     private void updateManufacturerRating(Manufacturer manufacturer) {
@@ -109,4 +131,22 @@ public class ReviewService {
         manufacturer.setRating((int) Math.round(averageRating));
         manufacturerRepository.save(manufacturer);
     }
+
+    public List<ReviewDto.ReviewResponseDto> getReviewsByManufacturer(Long manufacturerId) {
+        Manufacturer manufacturer = manufacturerRepository.findById(manufacturerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조업체를 찾을 수 없습니다."));
+
+        List<Review> reviews = reviewRepository.findByManufacturer(manufacturer);
+
+        return reviews.stream()
+                .map(review -> new ReviewDto.ReviewResponseDto(
+                        review.getId(),
+                        review.getContent(),
+                        review.getRating(),
+                        review.getCreatedAt(),
+                        review.getImages().stream().map(File::getUrl).collect(Collectors.toList()) // 이미지 URI 리스트
+                ))
+                .collect(Collectors.toList());
+    }
+
 }
