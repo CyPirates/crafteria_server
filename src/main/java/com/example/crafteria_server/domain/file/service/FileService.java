@@ -24,6 +24,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -139,8 +140,9 @@ public class FileService {
     public void deleteFile(File file) {
         Blob blob = storage.get(envBean.getBucketName(), file.getFileName());
         if (blob == null) {
-            log.error("FileService.deleteFile: 파일을 찾을 수 없습니다.");
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다.");
+            log.warn("FileService.deleteFile: 파일을 찾을 수 없습니다. 이미 삭제된 상태일 수 있습니다.");
+            // 파일이 없을 경우 예외를 발생시키지 않고 무시합니다.
+            return;
         }
 
         try {
@@ -151,5 +153,9 @@ public class FileService {
             log.error("FileService.deleteFile: {}", e.getMessage());
             throw new RuntimeException(e);
         }
+    }
+
+    public void deleteFiles(List<File> files) {
+        files.forEach(this::deleteFile);
     }
 }

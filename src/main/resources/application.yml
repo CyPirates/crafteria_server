@@ -13,7 +13,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MySQL8Dialect
+        dialect: org.hibernate.dialect.MySQLDialect
     defer-datasource-initialization: true
   mvc:
     view:
@@ -29,6 +29,7 @@ spring:
             google:
                 client-id: ${GOOGLE_CLIENT_ID}
                 client-secret: ${GOOGLE_CLIENT_SECRET}
+                redirect-uri: ${GOOGLE_REDIRECT_URI}
                 scope: email, profile
             kakao:
               client-id: ${KAKAO_CLIENT_ID}
@@ -38,6 +39,7 @@ spring:
               client-authentication-method: client_secret_post
               scope:
                 - profile_nickname
+                - account_email
               client-name: kakao
             naver:
               client-id: ${NAVER_CLIENT_ID}
@@ -73,8 +75,12 @@ spring:
   data:
     redis:
       port: 6379
-      host: localhost
+      host: ${REDIS_HOST}
 
+  servlet:
+    multipart:
+      max-file-size: 100MB  # 업로드 가능한 최대 파일 크기
+      max-request-size: 100MB  # 업로드 가능한 최대 요청 크기
 
 server:
   port: ${SERVER_PORT}

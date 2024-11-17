@@ -36,6 +36,7 @@ public record OAuth2UserInfo(
 
         return OAuth2UserInfo.builder()
                 .name((String) profile.get("nickname"))
+                .email((String) account.get("email"))
                 .build();
     }
 
@@ -44,6 +45,7 @@ public record OAuth2UserInfo(
 
         return OAuth2UserInfo.builder()
                 .name((String) response.get("name"))
+                .email((String) response.get("email"))
                 .build();
     }
     public User toEntity() {

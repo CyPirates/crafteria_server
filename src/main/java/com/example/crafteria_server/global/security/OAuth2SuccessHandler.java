@@ -4,6 +4,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -16,7 +17,9 @@ import java.io.IOException;
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     private final TokenProvider tokenProvider;
-    private static final String URI = "/auth/success";
+
+    @Value("${REDIRECT_URI}")
+    private String rediretUri;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -26,7 +29,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         tokenProvider.generateRefreshToken(authentication, accessToken);
 
         // 토큰 전달을 위한 redirect
-        String redirectUrl = UriComponentsBuilder.fromUriString(URI)
+        String redirectUrl = UriComponentsBuilder.fromUriString(rediretUri)
                 .queryParam("accessToken", accessToken)
                 .build().toUriString();
 

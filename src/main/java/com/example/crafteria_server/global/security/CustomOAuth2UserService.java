@@ -38,7 +38,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         User user = getOrSave(oAuth2UserInfo);
 
         // 6. OAuth2User로 반환
-        return new PrincipalDetails(user, oAuth2UserAttributes, userNameAttributeName);
+        return new PrincipalDetails(user, oAuth2UserAttributes);
     }
 
     private User getOrSave(OAuth2UserInfo oAuth2UserInfo) {
