@@ -39,6 +39,7 @@ spring:
               client-authentication-method: client_secret_post
               scope:
                 - profile_nickname
+                - account_email
               client-name: kakao
             naver:
               client-id: ${NAVER_CLIENT_ID}

@@ -52,24 +52,21 @@ public class OrderService {
     }
 
     public OrderDto.OrderResponse createOrder(Long userId, OrderDto.OrderRequest request) {
-
-        /* ModelPurchase modelPurchase = modelPurchaseRepository.findByUserIdAndModelId(userId, request.getModelId()).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "구매한 도면을 찾을 수 없습니다."));*/
-
         // 유저 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
-
-        // STL 파일 저장
-        File savedModelFile = fileService.saveModel(request.getModelFile());
 
         // 제조사 조회
         Manufacturer manufacturer = manufacturerRepository.findById(request.getManufacturerId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조사를 찾을 수 없습니다."));
 
+        // STL 파일 저장
+        List<File> savedModelFiles = request.getModelFiles().stream()
+                .map(fileService::saveModel)
+                .toList();
+
         // 주문 생성
         Order order = Order.builder()
-                .modelFile(savedModelFile)  // 모델 파일 설정
                 .user(user)
                 .manufacturer(manufacturer)
                 .deliveryAddress(request.getDeliveryAddress())
@@ -79,7 +76,8 @@ public class OrderService {
                 .heightSize(request.getHeightSize())
                 .quantity(request.getQuantity())
                 .magnification(request.getMagnification())
-                .purchasePrice(0)  // 구매 가격 설정 (필요시 수정)
+                .modelFiles(savedModelFiles)
+                .purchasePrice(0) // 구매 가격 설정 (필요시 수정)
                 .build();
 
         // 주문 저장 후 응답
