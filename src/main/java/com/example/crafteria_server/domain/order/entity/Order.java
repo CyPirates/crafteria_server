@@ -12,6 +12,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "model_order")
 @Getter
@@ -25,17 +28,13 @@ public class Order extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "model_file_id")
-    private File modelFile;
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "order_id") // 외래 키 설정
+    private List<File> modelFiles = new ArrayList<>(); // 여러 도면 파일 리스트
 
-    /*@ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "model_id", nullable = false)
-    private Model model;*/
-
-    @ManyToOne(fetch = FetchType.LAZY)  // Manufacturer와의 새로운 관계 설정
-    @JoinColumn(name = "manufacturer_id", nullable = false)  // Manufacturer 테이블의 외래 키 참조
-    private Manufacturer manufacturer;  // Manufacturer와의 관계 추가
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "manufacturer_id", nullable = false)
+    private Manufacturer manufacturer;
 
     @Column(nullable = false)
     private long purchasePrice;

@@ -36,7 +36,7 @@ public class OrderController {
     }
 
     @Operation(summary = "주문 생성", description = "주문을 생성합니다.")
-    @PostMapping(value = "/create", consumes = "multipart/form-data")
+    @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public JsonBody<OrderDto.OrderResponse> createOrder(
             @AuthenticationPrincipal PrincipalDetails principalDetails,
             @ModelAttribute OrderDto.OrderRequest request) {
