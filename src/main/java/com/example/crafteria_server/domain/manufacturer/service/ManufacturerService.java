@@ -39,8 +39,6 @@ public class ManufacturerService {
                 .introduction(request.getIntroduction())
                 .address(request.getAddress())
                 .dialNumber(request.getDialNumber())
-                .productionCount(request.getProductionCount())
-                .rating(request.getRating())
                 .representativeEquipment(request.getRepresentativeEquipment())
                 .image(savedFile)  // 저장된 이미지 파일을 Manufacturer에 설정
                 .build();
@@ -101,8 +99,6 @@ public class ManufacturerService {
         manufacturer.setIntroduction(request.getIntroduction());
         manufacturer.setAddress(request.getAddress());
         manufacturer.setDialNumber(request.getDialNumber());
-        manufacturer.setProductionCount(request.getProductionCount());
-        manufacturer.setRating(request.getRating());
         manufacturer.setRepresentativeEquipment(request.getRepresentativeEquipment());
 
         // Manufacturer 엔티티 저장

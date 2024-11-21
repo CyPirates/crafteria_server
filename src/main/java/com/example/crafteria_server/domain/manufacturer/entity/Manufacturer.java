@@ -21,6 +21,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Manufacturer extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -38,15 +39,14 @@ public class Manufacturer extends BaseEntity {
     @Column(name = "dial_number", length = 255)
     private String dialNumber;  // 전화번호, VARCHAR(255)
 
-    @Column(name = "production_count")
-    private Integer productionCount;  // 제작 횟수, INT
+    @Column(name = "production_count", nullable = false)
+    private Integer productionCount = 0;  // 제작 횟수, 기본값 0
 
-    @Column(name = "rating")
-    private Integer rating;  // 평점, INT
+    @Column(name = "rating", nullable = false)
+    private Integer rating = 0;  // 평점, 기본값 0
 
     @Column(name = "representative_equipment", length = 255)
     private String representativeEquipment;  // 대표 장비, VARCHAR(255)
-
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "image")

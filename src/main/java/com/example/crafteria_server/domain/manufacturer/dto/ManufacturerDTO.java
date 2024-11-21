@@ -102,13 +102,6 @@ public class ManufacturerDTO {
         @Schema(description = "제조사 전화번호", example = "02-1234-5678")
         private String dialNumber;
 
-        @NotNull
-        @Schema(description = "제조 횟수", example = "100")
-        private Integer productionCount;
-
-        @NotNull
-        @Schema(description = "제조사 평점", example = "5")
-        private Integer rating;
 
         @NotNull
         @Schema(description = "대표 장비", example = "creality 3D")
