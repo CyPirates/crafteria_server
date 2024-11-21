@@ -63,6 +63,21 @@ public class OrderDto {
         @Schema(description = "모델 파일 URL 리스트")
         private List<String> modelFileUrls; // 여러 도면 파일의 URL 리스트
 
+        @NotNull
+        @Schema(description = "받는 사람 이름", example = "홍길동")
+        private String recipientName;
+
+        @NotNull
+        @Schema(description = "받는 사람 전화번호", example = "010-1234-5678")
+        private String recipientPhone;
+
+        @NotNull
+        @Schema(description = "받는 사람 이메일", example = "test@example.com")
+        private String recipientEmail;
+
+        @Schema(description = "요청 사항", example = "부재 시 경비실에 맡겨주세요.")
+        private String specialRequest;
+
         public static OrderResponse from(Order order) {
             return OrderResponse.builder()
                     .orderId(order.getId())
@@ -76,7 +91,11 @@ public class OrderDto {
                     .status(order.getStatus().getKey())
                     .magnification(order.getMagnification())
                     .quantity(order.getQuantity())
-                    .modelFileUrls(order.getModelFiles().stream().map(File::getUrl).toList()) // 파일 URL 리스트
+                    .modelFileUrls(order.getModelFiles().stream().map(File::getUrl).toList())
+                    .recipientName(order.getRecipientName())
+                    .recipientPhone(order.getRecipientPhone())
+                    .recipientEmail(order.getRecipientEmail())
+                    .specialRequest(order.getSpecialRequest())
                     .build();
         }
     }
@@ -115,7 +134,21 @@ public class OrderDto {
         @Schema(description = "주문 수량", example = "1")
         private int quantity;
 
-
         private List<MultipartFile> modelFiles; // 여러 도면 파일 리스트
+
+        @NotNull
+        @Schema(description = "받는 사람 이름", example = "홍길동")
+        private String recipientName;
+
+        @NotNull
+        @Schema(description = "받는 사람 전화번호", example = "010-1234-5678")
+        private String recipientPhone;
+
+        @NotNull
+        @Schema(description = "받는 사람 이메일", example = "test@example.com")
+        private String recipientEmail;
+
+        @Schema(description = "요청 사항", example = "부재 시 경비실에 맡겨주세요.")
+        private String specialRequest;
     }
 }

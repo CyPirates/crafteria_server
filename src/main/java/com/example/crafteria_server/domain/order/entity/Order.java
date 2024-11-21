@@ -60,4 +60,16 @@ public class Order extends BaseEntity {
 
     @Column(nullable = false)
     private double magnification;
+
+    @Column(nullable = false)
+    private String recipientName; // 받는 사람 이름
+
+    @Column(nullable = false)
+    private String recipientPhone; // 받는 사람 전화번호
+
+    @Column(nullable = false)
+    private String recipientEmail; // 받는 사람 이메일
+
+    @Column(nullable = true)
+    private String specialRequest; // 요청 사항 (null 가능)
 }
