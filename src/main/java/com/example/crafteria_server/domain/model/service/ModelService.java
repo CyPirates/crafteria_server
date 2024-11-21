@@ -99,18 +99,34 @@ public class ModelService {
     }
 
     public UserModelDto.ModelResponse purchaseModel(Long userId, Long modelId) {
+        // 유저 조회
         User user = userRepository.findById(userId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+
+        // 모델 조회
         Model model = modelRepository.findById(modelId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "모델을 찾을 수 없습니다."));
+
+        // 자신이 올린 도면인지 확인
+        if (model.getAuthor().getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "자신이 판매중인 도면은 구매할 수 없습니다.");
+        }
+
+        // 이미 구매한 도면인지 확인
         modelPurchaseRepository.findByUserIdAndModelId(userId, modelId).ifPresent(modelPurchase -> {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 구매한 모델입니다.");
         });
+
+        // 구매 정보 저장
         modelPurchaseRepository.save(ModelPurchase.builder()
                 .user(user)
                 .model(model)
                 .build());
+
+        // 다운로드 수 증가
         model.setDownloadCount(model.getDownloadCount() + 1);
+
+        // 응답 DTO 반환
         return UserModelDto.ModelResponse.from(model);
     }
 
