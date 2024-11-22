@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -25,6 +26,10 @@ public class ReviewController {
             @AuthenticationPrincipal PrincipalDetails principalDetails,
             @ModelAttribute ReviewDto.ReviewRequestDto requestDto) {
 
+        if (requestDto.getImageFiles() == null) {
+            requestDto.setImageFiles(new ArrayList<>());
+        }
+
         ReviewDto.ReviewResponseDto responseDto = reviewService.addReview(principalDetails.getUserId(), requestDto);
         return ResponseEntity.ok(JsonBody.of(200, "리뷰가 작성되었습니다.", responseDto));
     }
@@ -36,6 +41,10 @@ public class ReviewController {
             @PathVariable Long reviewId,
             @ModelAttribute ReviewDto.ReviewRequestDto requestDto) {
 
+        if (requestDto.getImageFiles() == null) {
+            requestDto.setImageFiles(new ArrayList<>());
+        }
+
         ReviewDto.ReviewResponseDto responseDto = reviewService.updateReview(principalDetails.getUserId(), reviewId, requestDto);
         return ResponseEntity.ok(JsonBody.of(200, "리뷰가 수정되었습니다.", responseDto));
     }
@@ -45,6 +54,7 @@ public class ReviewController {
     public ResponseEntity<JsonBody<Void>> deleteReview(
             @AuthenticationPrincipal PrincipalDetails principalDetails,
             @PathVariable Long reviewId) {
+
 
         reviewService.deleteReview(principalDetails.getUserId(), reviewId);
         return ResponseEntity.ok(JsonBody.of(200, "리뷰가 삭제되었습니다.", null));
