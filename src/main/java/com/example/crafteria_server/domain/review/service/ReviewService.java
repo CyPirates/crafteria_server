@@ -6,6 +6,7 @@ import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
 import com.example.crafteria_server.domain.manufacturer.repository.ManufacturerRepository;
 import com.example.crafteria_server.domain.model.entity.Model;
 import com.example.crafteria_server.domain.model.repository.ModelRepository;
+import com.example.crafteria_server.domain.order.entity.Order;
 import com.example.crafteria_server.domain.order.entity.OrderStatus;
 import com.example.crafteria_server.domain.order.repository.OrderRepository;
 import com.example.crafteria_server.domain.review.dto.ReviewDto;
@@ -21,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,8 +40,12 @@ public class ReviewService {
         Manufacturer manufacturer = manufacturerRepository.findById(requestDto.getManufacturerId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조업체를 찾을 수 없습니다."));
 
-        orderRepository.findByUserIdAndManufacturerIdAndStatus(userId, requestDto.getManufacturerId(), OrderStatus.DELIVERED)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "해당 제조업체에 주문 완료된 유저만 리뷰를 남길 수 있습니다."));
+        List<Order> orders = orderRepository.findByUserIdAndManufacturerIdAndStatus(
+                userId, requestDto.getManufacturerId(), OrderStatus.DELIVERED);
+
+        if (orders.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "해당 제조업체에 주문 완료된 유저만 리뷰를 남길 수 있습니다.");
+        }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
@@ -63,7 +69,7 @@ public class ReviewService {
                 review.getContent(),
                 review.getRating(),
                 review.getCreatedAt(),
-                images.stream().map(File::getUrl).collect(Collectors.toList()) // 이미지 URI 리스트
+                images.stream().map(File::getUrl).collect(Collectors.toList())
         );
     }
 
@@ -78,7 +84,7 @@ public class ReviewService {
         // 기존 이미지 파일 삭제
         fileService.deleteFiles(review.getImages());
 
-        // 기존 리스트에서 직접 수정하지 않고, 새 이미지 리스트를 추가하는 방식으로 변경
+        // 새 이미지 처리
         List<File> newImages = saveImages(requestDto.getImageFiles());
         review.getImages().clear();  // 기존 이미지 리스트를 비웁니다.
         review.getImages().addAll(newImages);  // 새 이미지 리스트를 추가합니다.
@@ -110,11 +116,16 @@ public class ReviewService {
         updateManufacturerRating(review.getManufacturer());
     }
 
-
     private List<File> saveImages(List<MultipartFile> imageFiles) {
-        if (imageFiles == null || imageFiles.size() > 3) {
+        // 이미지 파일이 없을 경우 빈 리스트를 반환
+        if (imageFiles == null || imageFiles.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        if (imageFiles.size() > 3) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미지 파일은 최대 3개까지 첨부할 수 있습니다.");
         }
+
         return imageFiles.stream()
                 .map(fileService::saveImage)
                 .collect(Collectors.toList());
@@ -148,5 +159,4 @@ public class ReviewService {
                 ))
                 .collect(Collectors.toList());
     }
-
 }
