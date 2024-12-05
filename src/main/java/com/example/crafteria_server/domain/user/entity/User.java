@@ -25,12 +25,16 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Column(nullable = true)
+    private String dashboardStatus; // "PENDING" or "APPROVED"
+
     @Builder
-    public User(String oauth2Id, String username, String realname, Role role) {
+    public User(String oauth2Id, String username, String realname, Role role, String dashboardStatus) {
         this.oauth2Id = oauth2Id;
         this.username = username;
         this.realname = realname;
         this.role = role;
+        this.dashboardStatus = dashboardStatus;
     }
 
 }

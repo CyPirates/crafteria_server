@@ -21,29 +21,24 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     @Transactional
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-        // 1. 유저 정보(attributes) 가져오기
         Map<String, Object> oAuth2UserAttributes = super.loadUser(userRequest).getAttributes();
-
-        // 2. resistrationId 가져오기 (third-party id)
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
-
-        // 3. userNameAttributeName 가져오기
-        String userNameAttributeName = userRequest.getClientRegistration().getProviderDetails()
-                .getUserInfoEndpoint().getUserNameAttributeName();
-
-        // 4. 유저 정보 dto 생성
         OAuth2UserInfo oAuth2UserInfo = OAuth2UserInfo.of(registrationId, oAuth2UserAttributes);
 
-        // 5. 회원가입 및 로그인
-        User user = getOrSave(oAuth2UserInfo);
+        boolean isDashboard = determineIfDashboard(); // 대시보드 여부 결정 로직
+        User user = getOrSave(oAuth2UserInfo, isDashboard);
 
-        // 6. OAuth2User로 반환
         return new PrincipalDetails(user, oAuth2UserAttributes);
     }
 
-    private User getOrSave(OAuth2UserInfo oAuth2UserInfo) {
+    private User getOrSave(OAuth2UserInfo oAuth2UserInfo, boolean isDashboard) {
         User user = userRepository.findByOauth2Id(oAuth2UserInfo.email())
-                .orElseGet(oAuth2UserInfo::toEntity);
+                .orElseGet(() -> oAuth2UserInfo.toEntity(isDashboard));
         return userRepository.save(user);
+    }
+
+    private boolean determineIfDashboard() {
+        // API 요청에서 대시보드 여부를 확인하는 로직 추가
+        return false; // 기본값: 필요 시 API 요청 처리
     }
 }
