@@ -48,12 +48,11 @@ public record OAuth2UserInfo(
                 .email((String) response.get("email"))
                 .build();
     }
-    public User toEntity(boolean isDashboard) {
+    public User toEntity() {
         return User.builder()
                 .realname(name)
                 .oauth2Id(email)
-                .role(isDashboard ? Role.DASHBOARD : Role.USER)
-                .dashboardStatus(isDashboard ? "PENDING" : null)
+                .role(Role.USER)
                 .build();
     }
 }

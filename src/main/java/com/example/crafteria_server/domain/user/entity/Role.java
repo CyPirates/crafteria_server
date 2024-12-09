@@ -3,16 +3,11 @@ package com.example.crafteria_server.domain.user.entity;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-
 @Getter
+@RequiredArgsConstructor
 public enum Role {
     USER("ROLE_USER"),
-    DASHBOARD("ROLE_DASHBOARD");
+    ADMIN("ROLE_ADMIN");
 
     private final String key;
-
-    Role(String key) {
-        this.key = key;
-    }
-
 }
