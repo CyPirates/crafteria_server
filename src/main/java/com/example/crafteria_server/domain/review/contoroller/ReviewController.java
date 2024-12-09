@@ -30,8 +30,6 @@ public class ReviewController {
             requestDto.setImageFiles(new ArrayList<>());
         }
 
-        
-
         ReviewDto.ReviewResponseDto responseDto = reviewService.addReview(principalDetails.getUserId(), requestDto);
         return ResponseEntity.ok(JsonBody.of(200, "리뷰가 작성되었습니다.", responseDto));
     }
