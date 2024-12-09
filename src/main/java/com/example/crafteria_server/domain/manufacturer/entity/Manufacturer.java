@@ -4,10 +4,7 @@ import com.example.crafteria_server.domain.equipment.entity.Equipment;
 import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.global.entity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.util.ArrayList;
@@ -40,9 +37,11 @@ public class Manufacturer extends BaseEntity {
     private String dialNumber;  // 전화번호, VARCHAR(255)
 
     @Column(name = "production_count", nullable = false)
+    @Builder.Default
     private Integer productionCount = 0;  // 제작 횟수, 기본값 0
 
     @Column(name = "rating", nullable = false)
+    @Builder.Default
     private Integer rating = 0;  // 평점, 기본값 0
 
     @Column(name = "representative_equipment", length = 255)
