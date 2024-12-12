@@ -3,6 +3,7 @@ package com.example.crafteria_server.domain.chart.controller;
 import com.example.crafteria_server.domain.chart.dto.MonthlySalesStatisticsDTO;
 import com.example.crafteria_server.domain.chart.dto.SalesStatisticsDTO;
 import com.example.crafteria_server.domain.chart.service.SalesStatisticsService;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -21,6 +22,7 @@ public class SalesStatisticsController {
     private final SalesStatisticsService salesStatisticsService;
 
     @GetMapping("/daily")
+    @Operation(summary = "특정 날짜 매출 통계 조회")
     public ResponseEntity<SalesStatisticsDTO> getSalesStatisticsByDate(
             @RequestParam Long manufacturerId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate specificDate
@@ -30,6 +32,7 @@ public class SalesStatisticsController {
     }
 
     // 특정 기간 매출 통계
+    @Operation(summary = "특정 기간 매출 통계 조회")
     @GetMapping("/period")
     public ResponseEntity<SalesStatisticsDTO> getSalesStatisticsByPeriod(
             @RequestParam Long manufacturerId,
@@ -41,6 +44,7 @@ public class SalesStatisticsController {
     }
 
     // 월별 매출 통계
+    @Operation(summary = "월별 매출 통계 조회")
     @GetMapping("/monthly")
     public ResponseEntity<List<MonthlySalesStatisticsDTO>> getMonthlySalesStatistics(
             @RequestParam Long manufacturerId,
