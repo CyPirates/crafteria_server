@@ -83,6 +83,13 @@ public class EquipmentService {
         Equipment equipment = equipmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Equipment not found"));
 
+        Manufacturer existingManufacturer = equipment.getManufacturer();
+
+        // 입력된 제조사 ID와 장비의 기존 제조사 ID가 다른 경우 에러 처리
+        if (!existingManufacturer.getId().equals(request.getManufacturerId())) {
+            throw new IllegalArgumentException("The provided manufacturer ID does not match the equipment's current manufacturer.");
+        }
+
         Manufacturer manufacturer = manufacturerRepository.findById(request.getManufacturerId())
                 .orElseThrow(() -> new RuntimeException("Manufacturer not found"));
 
