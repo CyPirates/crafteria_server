@@ -28,13 +28,12 @@ public class Order extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "order_id") // 외래 키 설정
-    private List<File> modelFiles = new ArrayList<>(); // 여러 도면 파일 리스트
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "manufacturer_id", nullable = false)
     private Manufacturer manufacturer;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItem> orderItems = new ArrayList<>();
 
     @Column(nullable = false)
     private long purchasePrice;
@@ -47,29 +46,14 @@ public class Order extends BaseEntity {
     private String deliveryAddress;
 
     @Column(nullable = false)
-    private double widthSize;
+    private String recipientName;
 
     @Column(nullable = false)
-    private double lengthSize;
+    private String recipientPhone;
 
     @Column(nullable = false)
-    private double heightSize;
-
-    @Column(nullable = false)
-    private int quantity;
-
-    @Column(nullable = false)
-    private double magnification;
-
-    @Column(nullable = false)
-    private String recipientName; // 받는 사람 이름
-
-    @Column(nullable = false)
-    private String recipientPhone; // 받는 사람 전화번호
-
-    @Column(nullable = false)
-    private String recipientEmail; // 받는 사람 이메일
+    private String recipientEmail;
 
     @Column(nullable = true)
-    private String specialRequest; // 요청 사항 (null 가능)
+    private String specialRequest;
 }
