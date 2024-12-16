@@ -9,6 +9,7 @@ import com.example.crafteria_server.domain.model.repository.ModelPurchaseReposit
 import com.example.crafteria_server.domain.model.repository.ModelRepository;
 import com.example.crafteria_server.domain.order.dto.OrderDto;
 import com.example.crafteria_server.domain.order.entity.Order;
+import com.example.crafteria_server.domain.order.entity.OrderItem;
 import com.example.crafteria_server.domain.order.entity.OrderStatus;
 import com.example.crafteria_server.domain.order.repository.OrderRepository;
 import com.example.crafteria_server.domain.user.entity.User;
@@ -19,9 +20,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -60,12 +63,7 @@ public class OrderService {
         Manufacturer manufacturer = manufacturerRepository.findById(request.getManufacturerId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조사를 찾을 수 없습니다."));
 
-        // STL 파일 저장
-        List<File> savedModelFiles = request.getModelFiles().stream()
-                .map(fileService::saveModel)
-                .toList();
-
-        // 주문 생성
+        // 주문 객체 생성
         Order order = Order.builder()
                 .user(user)
                 .manufacturer(manufacturer)
@@ -74,19 +72,36 @@ public class OrderService {
                 .recipientPhone(request.getRecipientPhone())
                 .recipientEmail(request.getRecipientEmail())
                 .specialRequest(request.getSpecialRequest())
-                .status(OrderStatus.ORDERED)
-                .widthSize(request.getWidthSize())
-                .lengthSize(request.getLengthSize())
-                .heightSize(request.getHeightSize())
-                .quantity(request.getQuantity())
-                .magnification(request.getMagnification())
-                .modelFiles(savedModelFiles)
-                .purchasePrice(0) // 구매 가격 설정 (필요시 수정)
+                .purchasePrice(request.getPurchasePrice())
+                .status(getOrderStatusFromKey(request.getStatus()))
                 .build();
 
-        // 주문 저장 후 응답
-        return OrderDto.OrderResponse.from(orderRepository.save(order));
+        List<OrderItem> orderItems = new ArrayList<>();
+        // 각 주문 아이템에 대해 처리
+        for (OrderDto.OrderItemDto itemDto : request.getOrderItems()) {
+            // 파일 저장 로직 구현(여기서는 예제로 간단하게 처리)
+            File file = fileService.saveModel(itemDto.getModelFile());
+
+            // 주문 아이템 객체 생성
+            OrderItem orderItem = OrderItem.builder()
+                    .order(order)
+                    .file(file)
+                    .widthSize(itemDto.getWidthSize())
+                    .lengthSize(itemDto.getLengthSize())
+                    .heightSize(itemDto.getHeightSize())
+                    .magnification(itemDto.getMagnification())
+                    .quantity(itemDto.getQuantity())
+                    .build();
+
+            orderItems.add(orderItem);
+        }
+
+        order.setOrderItems(orderItems); // 주문 아이템 리스트 설정
+        orderRepository.save(order); // 주문 저장
+
+        return OrderDto.OrderResponse.from(order); // 주문 응답 생성 및 반환
     }
+
 
     public OrderDto.OrderResponse cancelOrderByUser(Long userId, Long orderId) {
         Order order = orderRepository.findByUserIdAndId(userId, orderId).orElseThrow(() ->
