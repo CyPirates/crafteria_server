@@ -1,5 +1,6 @@
 package com.example.crafteria_server.domain.user.entity;
 
+import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
 import com.example.crafteria_server.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -21,20 +22,22 @@ public class User extends BaseEntity {
     private String phoneNumber;
     private String address;
 
+    @Column(nullable = true)
+    private String password;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @Column(nullable = true)
-    private String dashboardStatus;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private DashboardStatus dashboardStatus = DashboardStatus.PENDING; // 기본값: 대기 상태
 
-    @Builder
-    public User(String oauth2Id, String username, String realname, Role role,String dashboardStatus) {
-        this.oauth2Id = oauth2Id;
-        this.username = username;
-        this.realname = realname;
-        this.role = role;
-        this.dashboardStatus = dashboardStatus;
-    }
+
+    @OneToOne(mappedBy = "dashboardUser", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private Manufacturer manufacturer;  // 제조사와 1대1 매핑
+
+
 
 }
