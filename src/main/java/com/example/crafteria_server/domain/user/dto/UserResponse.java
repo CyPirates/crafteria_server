@@ -2,13 +2,11 @@ package com.example.crafteria_server.domain.user.dto;
 
 import com.example.crafteria_server.domain.user.entity.Role;
 import com.example.crafteria_server.domain.user.entity.User;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserResponse {
@@ -17,7 +15,6 @@ public class UserResponse {
     private String realname;
     private String oauth2Id;
     private Role role;
-    private String dashboardStatus;
 
     public static UserResponse from(User user) {
         return new UserResponse(
@@ -25,8 +22,7 @@ public class UserResponse {
                 user.getUsername(),
                 user.getRealname(),
                 user.getOauth2Id(),
-                user.getRole(),
-                user.getDashboardStatus()
+                user.getRole()
         );
     }
 }

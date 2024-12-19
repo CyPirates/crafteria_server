@@ -2,6 +2,7 @@ package com.example.crafteria_server.domain.manufacturer.entity;
 
 import com.example.crafteria_server.domain.equipment.entity.Equipment;
 import com.example.crafteria_server.domain.file.entity.File;
+import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -53,4 +54,9 @@ public class Manufacturer extends BaseEntity {
 
     @OneToMany(mappedBy = "manufacturer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Equipment> equipmentList = new ArrayList<>();  // 제조사가 보유한 장비 리스트
+
+    // 대시보드 계정과 1대1 매핑
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "dashboard_user_id", nullable = false)
+    private User dashboardUser;  // 대시보드 계정
 }

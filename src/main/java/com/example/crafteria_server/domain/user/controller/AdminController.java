@@ -1,37 +1,48 @@
 package com.example.crafteria_server.domain.user.controller;
 
-import com.example.crafteria_server.domain.user.dto.RoleUpdateRequest;
-import com.example.crafteria_server.domain.user.entity.Role;
-import com.example.crafteria_server.domain.user.service.UserRoleService;
+import com.example.crafteria_server.domain.user.entity.DashboardStatus;
+import com.example.crafteria_server.domain.user.entity.User;
+import com.example.crafteria_server.domain.user.repository.UserRepository;
+import com.example.crafteria_server.domain.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
 @Slf4j(topic = "AdminController")
 public class AdminController {
-    private final UserRoleService userRoleService;
+    private final UserService userService;
+    private final UserRepository userRepository;
 
     // 역할 변경 API
-    @PatchMapping("/users/{userId}/role")
-    @Operation(summary = "사용자 역할 변경")
-    public ResponseEntity<?> updateUserRole(@PathVariable Long userId, @RequestBody RoleUpdateRequest request) {
-        userRoleService.updateRole(userId, request.getNewRole());
-        return ResponseEntity.ok("User role updated successfully");
+    @PatchMapping("/dashboard/{userId}/approve")
+    @Operation(summary = "대시보드 유저 승인", description = "대기 상태의 대시보드 유저를 승인합니다.")
+    public ResponseEntity<?> approveDashboardUser(@PathVariable Long userId) {
+        userService.updateDashboardStatus(userId, DashboardStatus.APPROVED);
+        return ResponseEntity.ok("유저가 승인되었습니다.");
     }
 
-    // DASHBOARD 사용자 승인 API
-    @PatchMapping("/dashboard/{userId}/approve")
-    @Operation(summary = "Dashboard 사용자 승인")
-    public ResponseEntity<?> approveDashboardUser(@PathVariable Long userId) {
-        userRoleService.approveDashboard(userId);
-        return ResponseEntity.ok("Dashboard user approved");
+    @PatchMapping("/dashboard/{userId}/reject")
+    @Operation(summary = "대시보드 유저 거절", description = "대기 상태의 대시보드 유저를 거절합니다.")
+    public ResponseEntity<?> rejectDashboardUser(@PathVariable Long userId) {
+        userService.updateDashboardStatus(userId, DashboardStatus.REJECTED);
+        return ResponseEntity.ok("유저가 거절되었습니다.");
+    }
+
+    @GetMapping("/dashboard/pending")
+    @Operation(summary = "승인 대기 중인 대시보드 유저 조회", description = "대기 상태의 대시보드 유저를 조회합니다.")
+    public ResponseEntity<?> getPendingDashboardUsers() {
+        List<User> pendingUsers = userRepository.findByDashboardStatus(DashboardStatus.PENDING);
+        return ResponseEntity.ok(pendingUsers.stream()
+                .map(user -> Map.of("id", user.getId(), "username", user.getUsername(), "realname", user.getRealname()))
+                .toList());
     }
 }
 
