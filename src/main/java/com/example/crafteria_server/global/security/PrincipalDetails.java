@@ -1,6 +1,7 @@
 package com.example.crafteria_server.global.security;
 
 import com.example.crafteria_server.domain.user.entity.User;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -10,6 +11,7 @@ import java.util.Collection;
 import java.util.Map;
 
 public class PrincipalDetails implements UserDetails, OAuth2User {
+    @Getter
     private User user;
     private Map<String, Object> attributes;
 
@@ -86,4 +88,5 @@ public class PrincipalDetails implements UserDetails, OAuth2User {
     public Long getUserId() {
         return user.getId();
     }
+
 }
