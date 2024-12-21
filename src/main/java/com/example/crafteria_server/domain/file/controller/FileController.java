@@ -16,7 +16,7 @@ public class FileController {
 //        fileService.saveModel(file.getImage());
 //        return JsonBody.of(200, "성공", "파일 업로드 성공");
 //    }
-//
+
 //    @PostMapping(value = "/upload_image_test", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 //    public JsonBody<String> uploadImage(@ModelAttribute FileDto file) {
 //        fileService.saveImage(file.getImage());
