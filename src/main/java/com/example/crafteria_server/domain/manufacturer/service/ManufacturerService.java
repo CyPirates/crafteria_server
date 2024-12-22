@@ -32,34 +32,31 @@ public class ManufacturerService {
     public ManufacturerDTO.ManufacturerResponse createManufacturer(
             ManufacturerDTO.ManufacturerRequest request,
             PrincipalDetails principalDetails) throws AccessDeniedException {
-        // 현재 로그인된 유저 확인
+
         User dashboardUser = principalDetails.getUser();
         if (dashboardUser.getRole() != Role.DASHBOARD) {
             throw new AccessDeniedException("대시보드 권한이 없습니다.");
         }
 
-        // MultipartFile을 File 엔티티로 변환하여 저장
         MultipartFile imageFile = request.getImage();
         File savedFile = null;
         if (imageFile != null && !imageFile.isEmpty()) {
-            savedFile = fileService.saveImage(imageFile); // 이미지 저장
+            savedFile = fileService.saveImage(imageFile);
         }
 
-        // Manufacturer 엔티티 생성
         Manufacturer manufacturer = Manufacturer.builder()
                 .name(request.getName())
                 .introduction(request.getIntroduction())
                 .address(request.getAddress())
                 .dialNumber(request.getDialNumber())
                 .representativeEquipment(request.getRepresentativeEquipment())
-                .image(savedFile) // 저장된 이미지 파일
-                .dashboardUser(dashboardUser) // 대시보드 유저 설정
+                .image(savedFile)
+                .dashboardUser(dashboardUser)
+                .unitPrice(request.getUnitPrice())  // **단위 가격 설정**
                 .build();
 
-        // Manufacturer 엔티티 저장
         Manufacturer savedManufacturer = manufacturerRepository.save(manufacturer);
 
-        // 응답 DTO로 변환하여 반환
         return ManufacturerDTO.ManufacturerResponse.from(savedManufacturer);
     }
 
@@ -109,9 +106,9 @@ public class ManufacturerService {
     // 제조사 수정
     public ManufacturerDTO.ManufacturerResponse updateManufacturer(
             Long id, ManufacturerDTO.ManufacturerRequest request, Long userId) throws AccessDeniedException {
+
         Manufacturer manufacturer = validateManufacturerOwnership(id, userId);
 
-        // 기존 이미지 파일이 있으면 삭제하고 새로운 파일로 대체
         if (request.getImage() != null && !request.getImage().isEmpty()) {
             if (manufacturer.getImage() != null) {
                 fileService.deleteFile(manufacturer.getImage());
@@ -120,12 +117,12 @@ public class ManufacturerService {
             manufacturer.setImage(updatedFile);
         }
 
-        // 기타 필드 업데이트
         manufacturer.setName(request.getName());
         manufacturer.setIntroduction(request.getIntroduction());
         manufacturer.setAddress(request.getAddress());
         manufacturer.setDialNumber(request.getDialNumber());
         manufacturer.setRepresentativeEquipment(request.getRepresentativeEquipment());
+        manufacturer.setUnitPrice(request.getUnitPrice());  // **단위 가격 수정**
 
         Manufacturer updatedManufacturer = manufacturerRepository.save(manufacturer);
         return ManufacturerDTO.ManufacturerResponse.from(updatedManufacturer);

@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -59,6 +60,10 @@ public class ManufacturerDTO {
         @Schema(description = "장비 리스트")
         private List<EquipmentDto.EquipmentResponse> equipmentList;
 
+        @NotNull
+        @Schema(description = "단위 가격", example = "1200.50")
+        private BigDecimal unitPrice;  // **단위 가격 추가**
+
         public static ManufacturerResponse from(Manufacturer manufacturer) {
             return ManufacturerResponse.builder()
                     .id(manufacturer.getId())
@@ -70,6 +75,7 @@ public class ManufacturerDTO {
                     .rating(manufacturer.getRating())
                     .representativeEquipment(manufacturer.getRepresentativeEquipment())
                     .imageFileUrl(manufacturer.getImage().getUrl())
+                    .unitPrice(manufacturer.getUnitPrice()) // **단위 가격 추가**
                     .equipmentList(manufacturer.getEquipmentList() != null ?
                             manufacturer.getEquipmentList().stream()
                                     .map(EquipmentDto.EquipmentResponse::from)
@@ -110,6 +116,10 @@ public class ManufacturerDTO {
         @NotNull
         @Schema(description = "대표 이미지", example = "image.jpg")
         private MultipartFile image;
+
+        @NotNull
+        @Schema(description = "단위 가격", example = "1200.50")
+        private BigDecimal unitPrice; // **단위 가격 추가**
 
     }
 }

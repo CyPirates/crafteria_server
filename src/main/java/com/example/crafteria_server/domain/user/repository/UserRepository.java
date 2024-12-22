@@ -3,10 +3,12 @@ package com.example.crafteria_server.domain.user.repository;
 import com.example.crafteria_server.domain.user.entity.DashboardStatus;
 import com.example.crafteria_server.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface UserRepository extends JpaRepository<User,Long> {
     Optional<User> findByOauth2Id(String oauth2Id);
     Optional<User> findByUsername(String username);
