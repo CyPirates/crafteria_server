@@ -54,16 +54,10 @@ public class OrderService {
         return OrderDto.OrderResponse.from(order);
     }
 
-    public OrderDto.OrderResponse createOrder(Long userId, OrderDto.OrderRequest request) {
-        // 유저 조회
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+    public OrderDto.OrderResponse createOrder(Long userId, OrderDto.OrderRequest request, List<MultipartFile> files) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+        Manufacturer manufacturer = manufacturerRepository.findById(request.getManufacturerId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조사를 찾을 수 없습니다."));
 
-        // 제조사 조회
-        Manufacturer manufacturer = manufacturerRepository.findById(request.getManufacturerId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조사를 찾을 수 없습니다."));
-
-        // 주문 객체 생성
         Order order = Order.builder()
                 .user(user)
                 .manufacturer(manufacturer)
@@ -77,15 +71,14 @@ public class OrderService {
                 .build();
 
         List<OrderItem> orderItems = new ArrayList<>();
-        // 각 주문 아이템에 대해 처리
-        for (OrderDto.OrderItemDto itemDto : request.getOrderItems()) {
-            // 파일 저장 로직 구현(여기서는 예제로 간단하게 처리)
-            File file = fileService.saveModel(itemDto.getModelFile());
+        for (int i = 0; i < request.getOrderItems().size(); i++) {
+            OrderDto.OrderItemDto itemDto = request.getOrderItems().get(i);
+            MultipartFile file = files.get(i);
+            File savedFile = fileService.saveModel(file);  // 파일 저장
 
-            // 주문 아이템 객체 생성
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
-                    .file(file)
+                    .file(savedFile)  // 파일 객체 연결
                     .widthSize(itemDto.getWidthSize())
                     .lengthSize(itemDto.getLengthSize())
                     .heightSize(itemDto.getHeightSize())
@@ -96,10 +89,9 @@ public class OrderService {
             orderItems.add(orderItem);
         }
 
-        order.setOrderItems(orderItems); // 주문 아이템 리스트 설정
-        orderRepository.save(order); // 주문 저장
-
-        return OrderDto.OrderResponse.from(order); // 주문 응답 생성 및 반환
+        order.setOrderItems(orderItems);
+        orderRepository.save(order);
+        return OrderDto.OrderResponse.from(order);
     }
 
 
