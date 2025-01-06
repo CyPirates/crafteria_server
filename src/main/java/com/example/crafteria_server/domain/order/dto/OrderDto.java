@@ -8,6 +8,7 @@ import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class OrderDto {
 
@@ -67,8 +68,8 @@ public class OrderDto {
                     .purchasePrice(order.getPurchasePrice())
                     .status(order.getStatus().getKey())
                     .modelFileUrls(order.getOrderItems().stream()
-                            .map(orderItem -> orderItem.getFile().getUrl())
-                            .toList())
+                            .map(orderItem -> orderItem.getFile().getUrl())  // 파일 URL 직접 접근
+                            .collect(Collectors.toList()))
                     .deliveryAddress(order.getDeliveryAddress())
                     .recipientName(order.getRecipientName())
                     .recipientPhone(order.getRecipientPhone())
@@ -101,7 +102,7 @@ public class OrderDto {
         private String deliveryAddress;
 
         @NotNull
-        @Schema(description = "주문 아이템 목록")
+        @Schema(description = "주문 아이템 리스트")
         private List<OrderItemDto> orderItems;
 
         @NotNull
@@ -113,11 +114,13 @@ public class OrderDto {
         private String recipientPhone;
 
         @NotNull
-        @Schema(description = "받는 사람 이메일", example = "test@example.com")
+        @Schema(description = "받는 사람 이메일", example = "example@naver.com")
         private String recipientEmail;
 
         @Schema(description = "특별 요청 사항", example = "부재시 경비실에 맡겨주세요")
         private String specialRequest;
+
+        private List<String> modelFilesUrls;
     }
 
     @Getter
@@ -126,9 +129,6 @@ public class OrderDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class OrderItemDto {
-        @NotNull
-        @Schema(description = "모델 파일", example = "도면.stl")
-        private MultipartFile modelFile;
 
         @NotNull
         @Schema(description = "가로 사이즈", example = "10.0")

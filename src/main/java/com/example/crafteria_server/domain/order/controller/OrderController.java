@@ -1,6 +1,7 @@
 package com.example.crafteria_server.domain.order.controller;
 
 
+import com.example.crafteria_server.domain.file.service.FileService;
 import com.example.crafteria_server.domain.order.dto.OrderDto;
 import com.example.crafteria_server.domain.order.service.OrderService;
 import com.example.crafteria_server.global.response.JsonBody;
@@ -9,10 +10,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @Slf4j(topic = "OrderController")
@@ -20,6 +24,7 @@ import java.util.List;
 @RequestMapping("/api/v1/order")
 public class OrderController {
     private final OrderService orderService;
+    private final FileService fileService;
 
     @Operation(summary = "내 주문 목록 조회", description = "내 주문 목록을 조회합니다.")
     @GetMapping("/my")
@@ -35,12 +40,13 @@ public class OrderController {
         return JsonBody.of(200, "성공", orderService.getOrderDetail(principalDetails.getUserId(), orderId));
     }
 
-    @Operation(summary = "주문 생성", description = "주문을 생성합니다.")
+
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public JsonBody<OrderDto.OrderResponse> createOrder(
             @AuthenticationPrincipal PrincipalDetails principalDetails,
-            @ModelAttribute OrderDto.OrderRequest request) {
-        return JsonBody.of(200, "성공", orderService.createOrder(principalDetails.getUserId(), request));
+            @ModelAttribute OrderDto.OrderRequest request,
+            @RequestParam("files") List<MultipartFile> files) {
+        return JsonBody.of(200, "성공", orderService.createOrder(principalDetails.getUserId(), request, files));
     }
 
     @Operation(summary = "주문 취소", description = "주문을 취소합니다.")
