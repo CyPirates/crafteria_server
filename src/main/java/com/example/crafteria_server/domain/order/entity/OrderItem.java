@@ -25,18 +25,18 @@ public class OrderItem extends BaseEntity {
     @JoinColumn(name = "file_id")
     private File file;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private double widthSize;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private double lengthSize;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private double heightSize;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private double magnification;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private int quantity;
 }
