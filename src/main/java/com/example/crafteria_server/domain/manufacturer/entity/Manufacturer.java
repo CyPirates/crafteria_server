@@ -63,4 +63,8 @@ public class Manufacturer extends BaseEntity {
 
     @Column(name = "unit_price", nullable = false)
     private BigDecimal unitPrice;  // **단위 가격 추가**
+
+    @Column(name = "total_reviews", nullable = false)
+    @Builder.Default
+    private Integer totalReviews = 0;  // 총 리뷰 수, 기본값 0
 }

@@ -44,8 +44,11 @@ public class OrderController {
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public JsonBody<OrderDto.OrderResponse> createOrder(
             @AuthenticationPrincipal PrincipalDetails principalDetails,
-            @ModelAttribute OrderDto.OrderRequest request,
-            @RequestParam("files") List<MultipartFile> files) {
+            @RequestPart("request") OrderDto.OrderRequest request,
+            @RequestPart("files") List<MultipartFile> files) {
+        log.info("request: {}", request.getOrderItems().stream()
+                .map(Object::toString)
+                .collect(Collectors.joining(", ")));
         return JsonBody.of(200, "성공", orderService.createOrder(principalDetails.getUserId(), request, files));
     }
 

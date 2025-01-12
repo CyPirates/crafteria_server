@@ -56,7 +56,17 @@ public class OrderService {
 
     public OrderDto.OrderResponse createOrder(Long userId, OrderDto.OrderRequest request, List<MultipartFile> files) {
         User user = userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+        log.info("request: {}", request.getManufacturerId());
+        log.info("request: {}", request.getDeliveryAddress());
+        log.info("request: {}", request.getRecipientName());
+        log.info("request: {}", request.getRecipientPhone());
+        log.info("request: {}", request.getRecipientEmail());
+        log.info("request: {}", request.getSpecialRequest());
+        log.info("request: {}", request.getPurchasePrice());
+        log.info("request: {}", request.getStatus());
+        log.info("request: {}", request.getOrderItems());
         Manufacturer manufacturer = manufacturerRepository.findById(request.getManufacturerId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조사를 찾을 수 없습니다."));
+
 
         Order order = Order.builder()
                 .user(user)

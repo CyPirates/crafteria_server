@@ -120,7 +120,6 @@ public class OrderDto {
         @Schema(description = "특별 요청 사항", example = "부재시 경비실에 맡겨주세요")
         private String specialRequest;
 
-        private List<String> modelFilesUrls;
     }
 
     @Getter
@@ -130,24 +129,35 @@ public class OrderDto {
     @AllArgsConstructor
     public static class OrderItemDto {
 
-        @NotNull
+
         @Schema(description = "가로 사이즈", example = "10.0")
         private double widthSize;
 
-        @NotNull
+
         @Schema(description = "세로 사이즈", example = "10.0")
         private double lengthSize;
 
-        @NotNull
+
         @Schema(description = "높이 사이즈", example = "10.0")
         private double heightSize;
 
-        @NotNull
+
         @Schema(description = "배율", example = "1.0")
         private double magnification;
 
-        @NotNull
+
         @Schema(description = "주문 수량", example = "1")
         private int quantity;
+
+        @Override
+        public String toString() {
+            return "OrderItemDto{" +
+                    "widthSize=" + widthSize +
+                    ", lengthSize=" + lengthSize +
+                    ", heightSize=" + heightSize +
+                    ", magnification=" + magnification +
+                    ", quantity=" + quantity +
+                    '}';
+        }
     }
 }
