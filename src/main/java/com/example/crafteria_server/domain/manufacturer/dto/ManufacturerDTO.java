@@ -64,6 +64,10 @@ public class ManufacturerDTO {
         @Schema(description = "단위 가격", example = "1200.50")
         private BigDecimal unitPrice;  // **단위 가격 추가**
 
+        @NotNull
+        @Schema(description = "총 리뷰 수", example = "100")
+        private Integer totalReviews;  // **총 리뷰 수 추가**
+
         public static ManufacturerResponse from(Manufacturer manufacturer) {
             return ManufacturerResponse.builder()
                     .id(manufacturer.getId())
@@ -75,7 +79,8 @@ public class ManufacturerDTO {
                     .rating(manufacturer.getRating())
                     .representativeEquipment(manufacturer.getRepresentativeEquipment())
                     .imageFileUrl(manufacturer.getImage().getUrl())
-                    .unitPrice(manufacturer.getUnitPrice()) // **단위 가격 추가**
+                    .unitPrice(manufacturer.getUnitPrice())
+                    .totalReviews(manufacturer.getTotalReviews())// **단위 가격 추가**
                     .equipmentList(manufacturer.getEquipmentList() != null ?
                             manufacturer.getEquipmentList().stream()
                                     .map(EquipmentDto.EquipmentResponse::from)

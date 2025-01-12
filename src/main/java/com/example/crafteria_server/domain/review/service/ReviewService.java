@@ -52,6 +52,7 @@ public class ReviewService {
 
         List<File> images = saveImages(requestDto.getImageFiles());
 
+
         Review review = Review.builder()
                 .user(user)
                 .manufacturer(manufacturer)
@@ -62,6 +63,8 @@ public class ReviewService {
                 .build();
 
         reviewRepository.save(review);
+        manufacturer.setTotalReviews(manufacturer.getTotalReviews() + 1);  // 리뷰 수 증가
+        manufacturerRepository.save(manufacturer);
         updateManufacturerRating(manufacturer);
 
         return new ReviewDto.ReviewResponseDto(
@@ -113,6 +116,11 @@ public class ReviewService {
 
         fileService.deleteFiles(review.getImages());
         reviewRepository.delete(review);
+        Manufacturer manufacturer = review.getManufacturer();
+        if (manufacturer.getTotalReviews() > 0) {
+            manufacturer.setTotalReviews(manufacturer.getTotalReviews() - 1);  // 리뷰 수 감소
+            manufacturerRepository.save(manufacturer);
+        }
         updateManufacturerRating(review.getManufacturer());
     }
 
