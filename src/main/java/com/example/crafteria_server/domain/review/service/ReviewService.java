@@ -15,6 +15,8 @@ import com.example.crafteria_server.domain.review.repository.ReviewRepository;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -151,20 +153,15 @@ public class ReviewService {
         manufacturerRepository.save(manufacturer);
     }
 
-    public List<ReviewDto.ReviewResponseDto> getReviewsByManufacturer(Long manufacturerId) {
-        Manufacturer manufacturer = manufacturerRepository.findById(manufacturerId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조업체를 찾을 수 없습니다."));
+    public Page<ReviewDto.ReviewResponseDto> getReviewsByManufacturer(Long manufacturerId, Pageable pageable) {
+        Page<Review> reviewsPage = reviewRepository.findByManufacturerId(manufacturerId, pageable);
 
-        List<Review> reviews = reviewRepository.findByManufacturer(manufacturer);
-
-        return reviews.stream()
-                .map(review -> new ReviewDto.ReviewResponseDto(
-                        review.getId(),
-                        review.getContent(),
-                        review.getRating(),
-                        review.getCreatedAt(),
-                        review.getImages().stream().map(File::getUrl).collect(Collectors.toList()) // 이미지 URI 리스트
-                ))
-                .collect(Collectors.toList());
+        return reviewsPage.map(review -> ReviewDto.ReviewResponseDto.builder()
+                .id(review.getId())
+                .content(review.getContent())
+                .rating(review.getRating())
+                .createdAt(review.getCreatedAt())
+                .imageUrls(review.getImages().stream().map(File::getUrl).collect(Collectors.toList()))
+                .build());
     }
 }
