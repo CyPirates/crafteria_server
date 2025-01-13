@@ -6,6 +6,10 @@ import com.example.crafteria_server.global.response.JsonBody;
 import com.example.crafteria_server.global.security.PrincipalDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -62,10 +66,13 @@ public class ReviewController {
         return ResponseEntity.ok(JsonBody.of(200, "리뷰가 삭제되었습니다.", null));
     }
 
-    @Operation(summary = "제조업체의 모든 리뷰 조회", description = "특정 제조업체에 대한 모든 리뷰를 조회합니다.")
     @GetMapping("/manufacturer/{manufacturerId}")
-    public ResponseEntity<JsonBody<List<ReviewDto.ReviewResponseDto>>> getReviewsByManufacturer(@PathVariable Long manufacturerId) {
-        List<ReviewDto.ReviewResponseDto> reviews = reviewService.getReviewsByManufacturer(manufacturerId);
+    public ResponseEntity<JsonBody<Page<ReviewDto.ReviewResponseDto>>> getReviewsByManufacturer(
+            @PathVariable Long manufacturerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<ReviewDto.ReviewResponseDto> reviews = reviewService.getReviewsByManufacturer(manufacturerId, pageable);
         return ResponseEntity.ok(JsonBody.of(200, "성공적으로 조회되었습니다.", reviews));
     }
 }
