@@ -10,6 +10,7 @@ import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.global.security.PrincipalDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -70,6 +71,7 @@ public class ManufacturerService {
 
         Manufacturer manufacturer = optionalManufacturer.get();
 
+        Hibernate.initialize(manufacturer.getTechnologies()); // 기술 목록 초기화
         // LazyInitializationException 방지: equipmentList 초기화
         manufacturer.getEquipmentList().size();
 

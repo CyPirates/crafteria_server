@@ -2,6 +2,7 @@ package com.example.crafteria_server.domain.manufacturer.entity;
 
 import com.example.crafteria_server.domain.equipment.entity.Equipment;
 import com.example.crafteria_server.domain.file.entity.File;
+import com.example.crafteria_server.domain.technology.entity.Technology;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.global.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -67,4 +68,7 @@ public class Manufacturer extends BaseEntity {
     @Column(name = "total_reviews", nullable = false)
     @Builder.Default
     private Integer totalReviews = 0;  // 총 리뷰 수, 기본값 0
+
+    @OneToMany(mappedBy = "manufacturer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Technology> technologies = new ArrayList<>();
 }
