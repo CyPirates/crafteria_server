@@ -3,6 +3,7 @@ package com.example.crafteria_server.domain.manufacturer.dto;
 
 import com.example.crafteria_server.domain.equipment.dto.EquipmentDto;
 import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
+import com.example.crafteria_server.domain.technology.dto.TechnologyDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -68,6 +69,9 @@ public class ManufacturerDTO {
         @Schema(description = "총 리뷰 수", example = "100")
         private Integer totalReviews;  // **총 리뷰 수 추가**
 
+        @Schema(description = "기술 목록")
+        private List<TechnologyDto.TechnologyResponse> technologies;
+
         public static ManufacturerResponse from(Manufacturer manufacturer) {
             return ManufacturerResponse.builder()
                     .id(manufacturer.getId())
@@ -86,6 +90,9 @@ public class ManufacturerDTO {
                                     .map(EquipmentDto.EquipmentResponse::from)
                                     .collect(Collectors.toList())
                             : Collections.emptyList())
+                    .technologies(manufacturer.getTechnologies().stream()
+                            .map(TechnologyDto.TechnologyResponse::from)
+                            .collect(Collectors.toList()))
                     .build();
         }
 
