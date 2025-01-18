@@ -60,6 +60,9 @@ public class OrderDto {
         @Schema(description = "특별 요청 사항", example = "부재시 경비실에 맡겨주세요")
         private String specialRequest;
 
+        @Schema(description = "주문 아이템 리스트")
+        private List<OrderItemDto> orderItems;
+
         public static OrderResponse from(Order order) {
             return OrderResponse.builder()
                     .orderId(order.getId())
@@ -75,6 +78,15 @@ public class OrderDto {
                     .recipientPhone(order.getRecipientPhone())
                     .recipientEmail(order.getRecipientEmail())
                     .specialRequest(order.getSpecialRequest())
+                    .orderItems(order.getOrderItems().stream()
+                            .map(orderItem -> OrderItemDto.builder()
+                                    .widthSize(orderItem.getWidthSize())
+                                    .lengthSize(orderItem.getLengthSize())
+                                    .heightSize(orderItem.getHeightSize())
+                                    .magnification(orderItem.getMagnification())
+                                    .quantity(orderItem.getQuantity())
+                                    .build())
+                            .collect(Collectors.toList()))
                     .build();
         }
     }
