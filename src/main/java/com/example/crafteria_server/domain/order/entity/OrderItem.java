@@ -1,6 +1,7 @@
 package com.example.crafteria_server.domain.order.entity;
 
 import com.example.crafteria_server.domain.file.entity.File;
+import com.example.crafteria_server.domain.technology.entity.Technology;
 import com.example.crafteria_server.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -39,4 +40,8 @@ public class OrderItem extends BaseEntity {
 
     @Column(nullable = true)
     private int quantity;
+
+    @ManyToOne(fetch = FetchType.LAZY)  // Technology와 Many-to-One 관계 추가
+    @JoinColumn(name = "technology_id")
+    private Technology technology;  // Technology 엔티티 참조
 }
