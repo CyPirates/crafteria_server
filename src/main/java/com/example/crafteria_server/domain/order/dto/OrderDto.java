@@ -85,6 +85,7 @@ public class OrderDto {
                                     .heightSize(orderItem.getHeightSize())
                                     .magnification(orderItem.getMagnification())
                                     .quantity(orderItem.getQuantity())
+                                    .technologyId(orderItem.getTechnology().getId())
                                     .build())
                             .collect(Collectors.toList()))
                     .build();
@@ -161,6 +162,9 @@ public class OrderDto {
         @Schema(description = "주문 수량", example = "1")
         private int quantity;
 
+        @Schema(description = "기술 ID", example = "1")
+        private Long technologyId;
+
         @Override
         public String toString() {
             return "OrderItemDto{" +
@@ -169,6 +173,7 @@ public class OrderDto {
                     ", heightSize=" + heightSize +
                     ", magnification=" + magnification +
                     ", quantity=" + quantity +
+                    ", technologyId=" + technologyId +
                     '}';
         }
     }

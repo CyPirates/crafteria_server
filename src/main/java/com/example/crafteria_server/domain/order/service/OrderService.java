@@ -12,6 +12,8 @@ import com.example.crafteria_server.domain.order.entity.Order;
 import com.example.crafteria_server.domain.order.entity.OrderItem;
 import com.example.crafteria_server.domain.order.entity.OrderStatus;
 import com.example.crafteria_server.domain.order.repository.OrderRepository;
+import com.example.crafteria_server.domain.technology.entity.Technology;
+import com.example.crafteria_server.domain.technology.repository.TechnologyRepository;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.domain.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -39,6 +41,7 @@ public class OrderService {
     private final UserRepository userRepository;
     private final FileService fileService;
     private final ManufacturerRepository manufacturerRepository;  // 추가
+    private final TechnologyRepository technologyRepository;  // 추가
 
     public List<OrderDto.OrderResponse> getMyOrderList(Long userId, int page) {
         PageRequest pageable = PageRequest.of(page, 10);
@@ -56,17 +59,7 @@ public class OrderService {
 
     public OrderDto.OrderResponse createOrder(Long userId, OrderDto.OrderRequest request, List<MultipartFile> files) {
         User user = userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
-        log.info("request: {}", request.getManufacturerId());
-        log.info("request: {}", request.getDeliveryAddress());
-        log.info("request: {}", request.getRecipientName());
-        log.info("request: {}", request.getRecipientPhone());
-        log.info("request: {}", request.getRecipientEmail());
-        log.info("request: {}", request.getSpecialRequest());
-        log.info("request: {}", request.getPurchasePrice());
-        log.info("request: {}", request.getStatus());
-        log.info("request: {}", request.getOrderItems());
         Manufacturer manufacturer = manufacturerRepository.findById(request.getManufacturerId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조사를 찾을 수 없습니다."));
-
 
         Order order = Order.builder()
                 .user(user)
@@ -85,10 +78,12 @@ public class OrderService {
             OrderDto.OrderItemDto itemDto = request.getOrderItems().get(i);
             MultipartFile file = files.get(i);
             File savedFile = fileService.saveModel(file);  // 파일 저장
+            Technology technology = technologyRepository.findById(itemDto.getTechnologyId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "기술 정보를 찾을 수 없습니다."));
 
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
-                    .file(savedFile)  // 파일 객체 연결
+                    .file(savedFile)
+                    .technology(technology)  // 주문 항목에 기술 연결
                     .widthSize(itemDto.getWidthSize())
                     .lengthSize(itemDto.getLengthSize())
                     .heightSize(itemDto.getHeightSize())
