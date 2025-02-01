@@ -39,5 +39,4 @@ public class User extends BaseEntity {
     private Manufacturer manufacturer;  // 제조사와 1대1 매핑
 
 
-
 }

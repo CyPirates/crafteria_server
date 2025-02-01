@@ -40,7 +40,7 @@ public class OrderController {
         return JsonBody.of(200, "성공", orderService.getOrderDetail(principalDetails.getUserId(), orderId));
     }
 
-
+    @Operation(summary = "주문 생성", description = "주문을 생성합니다.")
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public JsonBody<OrderDto.OrderResponse> createOrder(
             @AuthenticationPrincipal PrincipalDetails principalDetails,
@@ -78,5 +78,11 @@ public class OrderController {
     @GetMapping("/manufacturer/{manufacturerId}/orders")
     public JsonBody<List<OrderDto.OrderResponse>> getAllOrdersByManufacturer(@PathVariable Long manufacturerId) {
         return JsonBody.of(200, "성공", orderService.getAllOrdersByManufacturer(manufacturerId));
+    }
+
+    @Operation(summary = "대시보드 사용자 주문 상세 조회", description = "대시보드 사용자가 자신의 제조사에 연결된 주문 상세를 조회합니다.")
+    @GetMapping("/dashboard/{orderId}")
+    public JsonBody<OrderDto.OrderResponse> getOrderDetailForDashboardUser(@AuthenticationPrincipal PrincipalDetails principalDetails, @PathVariable Long orderId) {
+        return JsonBody.of(200, "성공", orderService.getOrderDetailForDashboardUser(principalDetails.getUserId(), orderId));
     }
 }

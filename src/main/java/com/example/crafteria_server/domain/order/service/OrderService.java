@@ -155,4 +155,18 @@ public class OrderService {
                 .map(OrderDto.OrderResponse::from)
                 .toList();
     }
+
+    public OrderDto.OrderResponse getOrderDetailForDashboardUser(Long dashboardUserId, Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
+
+        Manufacturer manufacturer = manufacturerRepository.findByDashboardUserId(dashboardUserId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "대시보드 사용자에게 매칭되는 제조사가 없습니다."));
+
+        if (!order.getManufacturer().getId().equals(manufacturer.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "이 사용자에게는 접근 권한이 없습니다.");
+        }
+
+        return OrderDto.OrderResponse.from(order);
+    }
 }

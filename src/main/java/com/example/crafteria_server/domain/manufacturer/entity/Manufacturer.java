@@ -62,8 +62,7 @@ public class Manufacturer extends BaseEntity {
     @JoinColumn(name = "dashboard_user_id", nullable = false)
     private User dashboardUser;  // 대시보드 계정
 
-    @Column(name = "unit_price", nullable = false)
-    private BigDecimal unitPrice;  // **단위 가격 추가**
+
 
     @Column(name = "total_reviews", nullable = false)
     @Builder.Default
