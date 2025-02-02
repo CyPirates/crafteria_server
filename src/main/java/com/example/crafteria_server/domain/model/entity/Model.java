@@ -4,10 +4,7 @@ import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.domain.user.entity.Author;
 import com.example.crafteria_server.global.entity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 @Entity
@@ -30,15 +27,18 @@ public class Model extends BaseEntity {
 
     // rating: 0 ~ 10
     @Column(nullable = false)
+    @Builder.Default
     private int rating = 5;
 
     @Column(nullable = false)
     private long price;
 
     @Column(nullable = false)
+    @Builder.Default
     private long viewCount = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private long downloadCount = 0;
 
     @Column(nullable = false)

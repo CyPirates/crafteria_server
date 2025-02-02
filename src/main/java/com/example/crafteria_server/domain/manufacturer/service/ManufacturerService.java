@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.AccessDeniedException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -53,7 +54,7 @@ public class ManufacturerService {
                 .representativeEquipment(request.getRepresentativeEquipment())
                 .image(savedFile)
                 .dashboardUser(dashboardUser)
-                .unitPrice(request.getUnitPrice())  // **단위 가격 설정**
+                .technologies(new ArrayList<>()) // 기술 목록을 빈 리스트로 초기화
                 .build();
 
         Manufacturer savedManufacturer = manufacturerRepository.save(manufacturer);
@@ -124,7 +125,6 @@ public class ManufacturerService {
         manufacturer.setAddress(request.getAddress());
         manufacturer.setDialNumber(request.getDialNumber());
         manufacturer.setRepresentativeEquipment(request.getRepresentativeEquipment());
-        manufacturer.setUnitPrice(request.getUnitPrice());  // **단위 가격 수정**
 
         Manufacturer updatedManufacturer = manufacturerRepository.save(manufacturer);
         return ManufacturerDTO.ManufacturerResponse.from(updatedManufacturer);

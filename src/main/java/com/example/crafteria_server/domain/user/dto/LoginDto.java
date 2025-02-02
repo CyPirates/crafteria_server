@@ -22,5 +22,6 @@ public class LoginDto {
         private String username;
         private String role;
         private String accessToken;
+        private String manufacturerId;
     }
 }

@@ -21,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -88,10 +90,27 @@ public class UserService implements UserDetailsService {
                 new PrincipalDetails(user), null, new PrincipalDetails(user).getAuthorities());
         String accessToken = tokenProvider.generateAccessToken(authentication);
 
+        // 제조사 ID 가져오기 (있을 경우)
+        String manufacturerId = Optional.ofNullable(user.getManufacturer())
+                .map(manufacturer -> manufacturer.getId().toString())
+                .map(Object::toString)
+                .orElse("제조사 등록이 안됐습니다.");
+
         return LoginDto.LoginResponse.builder()
                 .username(user.getUsername())
                 .role(user.getRole().name())
                 .accessToken(accessToken)
+                .manufacturerId(manufacturerId) // 응답에 제조사 ID 추가
                 .build();
+    }
+
+    public String getLoggedInUserManufacturerId(PrincipalDetails principalDetails) {
+        User user = userRepository.findById(principalDetails.getUser().getId())
+                .orElseThrow(() -> new UsernameNotFoundException("로그인된 유저를 찾을 수 없습니다."));
+
+        return Optional.ofNullable(user.getManufacturer())
+                .map(manufacturer -> manufacturer.getId().toString())
+                .map(Object::toString)
+                .orElse("대시보드 유저에게 매칭된 제조사가 없습니다.");
     }
 }

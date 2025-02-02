@@ -61,9 +61,6 @@ public class ManufacturerDTO {
         @Schema(description = "장비 리스트")
         private List<EquipmentDto.EquipmentResponse> equipmentList;
 
-        @NotNull
-        @Schema(description = "단위 가격", example = "1200.50")
-        private BigDecimal unitPrice;  // **단위 가격 추가**
 
         @NotNull
         @Schema(description = "총 리뷰 수", example = "100")
@@ -83,7 +80,6 @@ public class ManufacturerDTO {
                     .rating(manufacturer.getRating())
                     .representativeEquipment(manufacturer.getRepresentativeEquipment())
                     .imageFileUrl(manufacturer.getImage().getUrl())
-                    .unitPrice(manufacturer.getUnitPrice())
                     .totalReviews(manufacturer.getTotalReviews())// **단위 가격 추가**
                     .equipmentList(manufacturer.getEquipmentList() != null ?
                             manufacturer.getEquipmentList().stream()
@@ -129,9 +125,7 @@ public class ManufacturerDTO {
         @Schema(description = "대표 이미지", example = "image.jpg")
         private MultipartFile image;
 
-        @NotNull
-        @Schema(description = "단위 가격", example = "1200.50")
-        private BigDecimal unitPrice; // **단위 가격 추가**
+
 
     }
 }
