@@ -38,5 +38,4 @@ public class User extends BaseEntity {
     @OneToOne(mappedBy = "dashboardUser", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Manufacturer manufacturer;  // 제조사와 1대1 매핑
 
-
 }
