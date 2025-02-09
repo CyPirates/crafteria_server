@@ -29,6 +29,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Slf4j(topic = "OrderService")
@@ -60,6 +61,7 @@ public class OrderService {
     public OrderDto.OrderResponse createOrder(Long userId, OrderDto.OrderRequest request, List<MultipartFile> files) {
         User user = userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
         Manufacturer manufacturer = manufacturerRepository.findById(request.getManufacturerId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조사를 찾을 수 없습니다."));
+        String paymentId = UUID.randomUUID().toString();  // 결제 ID 생성
 
         Order order = Order.builder()
                 .user(user)
@@ -71,6 +73,7 @@ public class OrderService {
                 .specialRequest(request.getSpecialRequest())
                 .purchasePrice(request.getPurchasePrice())
                 .status(getOrderStatusFromKey(request.getStatus()))
+                .paymentId(paymentId)
                 .build();
 
         List<OrderItem> orderItems = new ArrayList<>();

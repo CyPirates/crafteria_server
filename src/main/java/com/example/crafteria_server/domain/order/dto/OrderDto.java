@@ -63,6 +63,10 @@ public class OrderDto {
         @Schema(description = "주문 아이템 리스트")
         private List<OrderItemDto> orderItems;
 
+        @NotNull
+        @Schema(description = "결제 ID", example = "8a74a3a2-3b4f-4c09-945e-809498b8b300")
+        private String paymentId; // 결제 ID 필드 추가
+
         public static OrderResponse from(Order order) {
             return OrderResponse.builder()
                     .orderId(order.getId())
@@ -78,6 +82,7 @@ public class OrderDto {
                     .recipientPhone(order.getRecipientPhone())
                     .recipientEmail(order.getRecipientEmail())
                     .specialRequest(order.getSpecialRequest())
+                    .paymentId(order.getPaymentId())
                     .orderItems(order.getOrderItems().stream()
                             .map(orderItem -> OrderItemDto.builder()
                                     .widthSize(orderItem.getWidthSize())
