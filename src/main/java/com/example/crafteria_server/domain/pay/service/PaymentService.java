@@ -7,6 +7,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -29,12 +30,15 @@ public class PaymentService {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Value("${portone_api_secret}")
+    private String portoneApiSecret;
+
     public PaymentDto.PaymentResultDto processPayment(String paymentId, Long orderId) throws Exception {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "PortOne " + System.getenv("PORTONE_API_SECRET"));
+        headers.set("Authorization", "PortOne " + portoneApiSecret);
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         ResponseEntity<PaymentDto.PaymentResponse> response = restTemplate.exchange(
@@ -65,3 +69,4 @@ public class PaymentService {
         return new PaymentDto.PaymentResultDto(payment.getStatus(), "결제가 성공적으로 처리되었습니다.");
     }
 }
+
