@@ -1,20 +1,19 @@
 package com.example.crafteria_server.domain.user.controller;
 
 import com.example.crafteria_server.domain.user.dto.UserResponse;
+import com.example.crafteria_server.domain.user.dto.UserUpdateRequest;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.domain.user.service.UserInfoService;
 import com.example.crafteria_server.global.response.JsonBody;
 import com.example.crafteria_server.global.security.PrincipalDetails;
 import com.google.api.Authentication;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -58,5 +57,20 @@ public class UserInfoController {
                 .map(UserResponse::from)
                 .toList();
         return ResponseEntity.ok(responses);
+    }
+
+    // 🔥 로그인한 유저가 자기 자신의 정보 수정 (이름 & 주소)
+    @PatchMapping("/me")
+    @Operation(summary = "유저 정보 수정", description = "로그인한 사용자가 자신의 이름과 실명, 주소를 수정합니다.")
+    public ResponseEntity<UserResponse> updateCurrentUser(
+            @AuthenticationPrincipal PrincipalDetails principalDetails,
+            @RequestBody @Valid UserUpdateRequest request) {
+
+        if (principalDetails == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        User updatedUser = userInfoService.updateCurrentUser(principalDetails.getUserId(), request);
+        return ResponseEntity.ok(UserResponse.from(updatedUser));
     }
 }
