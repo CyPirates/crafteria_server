@@ -19,7 +19,7 @@ public class PaymentController {
 
     private PaymentService paymentService;
 
-    @PostMapping("/complete")
+    @PostMapping("/complete")    
     public JsonBody<PaymentDto.PaymentResultDto> completePayment(@RequestBody PaymentDto.PaymentRequestDto paymentRequest) {
         try {
             PaymentDto.PaymentResultDto paymentResult = paymentService.processPayment(paymentRequest.getPaymentId(), paymentRequest.getOrder());
