@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @Slf4j(topic = "UserModelController")
@@ -23,8 +24,10 @@ public class UserModelController {
     private final ModelService modelService;
 
     @GetMapping("/list/popular")
-    public JsonBody<List<UserModelDto.ModelResponse>> getPopularModelList(@RequestParam(defaultValue = "0") int page) {
-        return JsonBody.of(200, "성공", modelService.getPopularList(page));
+    public JsonBody<List<UserModelDto.ModelResponse>> getPopularModelList(@RequestParam(defaultValue = "0") int page,
+                                                                          @AuthenticationPrincipal PrincipalDetails principalDetails) {
+        Optional<Long> userId = Optional.ofNullable(principalDetails).map(PrincipalDetails::getUserId);
+        return JsonBody.of(200, "성공", modelService.getPopularList(page, userId));
     }
 
     @GetMapping("/view/{modelId}")

@@ -62,6 +62,10 @@ public class UserModelDto {
         @Schema(description = "모델 파일 URL", example = "http://localhost:8080/model/1")
         private String modelFileUrl;
 
+        @NotNull
+        @Schema(description = "구매 여부", example = "true")
+        private boolean purchased;
+
         public static ModelResponse from(Model model) {
             return ModelResponse.builder()
                     .id(model.getId())
@@ -75,6 +79,7 @@ public class UserModelDto {
                     .widthSize(model.getWidthSize())
                     .lengthSize(model.getLengthSize())
                     .heightSize(model.getHeightSize())
+                    .purchased(false)
                     .modelFileUrl(model.getModelFile().getUrl())
                     .build();
         }

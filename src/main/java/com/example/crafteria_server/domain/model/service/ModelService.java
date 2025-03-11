@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j(topic = "ModelService")
@@ -33,10 +34,18 @@ public class ModelService {
     private final ModelPurchaseRepository modelPurchaseRepository;
     private final FileService fileService;
 
-    public List<UserModelDto.ModelResponse> getPopularList(int page) {
+    public List<UserModelDto.ModelResponse> getPopularList(int page, Optional<Long> userId) {
         Pageable pageable = PageRequest.of(page, 10);
-        return modelRepository.findAllOrderByViewCountDesc(pageable).stream()
-                .map(UserModelDto.ModelResponse::from)
+        List<Model> models = modelRepository.findAllOrderByViewCountDesc(pageable).getContent();
+
+        return models.stream()
+                .map(model -> {
+                    UserModelDto.ModelResponse response = UserModelDto.ModelResponse.from(model);
+                    userId.ifPresent(uId -> {
+                        response.setPurchased(checkIfModelPurchased(uId, model.getId()));
+                    });
+                    return response;
+                })
                 .toList();
     }
 
@@ -135,6 +144,10 @@ public class ModelService {
         return modelRepository.findAllByAuthorIdOrderByCreateDateDesc(userId, pageable).stream()
                 .map(UserModelDto.ModelResponse::from)
                 .toList();
+    }
+
+    private boolean checkIfModelPurchased(Long userId, Long modelId) {
+        return modelPurchaseRepository.findByUserIdAndModelId(userId, modelId).isPresent();
     }
 }
 
