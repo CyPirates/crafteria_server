@@ -59,4 +59,10 @@ public class Order extends BaseEntity {
 
     @Column(nullable = false, unique = true)
     private String paymentId; // 결제 ID
+
+    @Column(nullable = true)
+    private String shippingNumber; // 배송번호
+
+
+
 }

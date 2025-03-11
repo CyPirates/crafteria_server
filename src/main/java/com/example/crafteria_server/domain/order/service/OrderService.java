@@ -117,19 +117,24 @@ public class OrderService {
         return OrderDto.OrderResponse.from(orderRepository.save(order));
     }
 
-    public OrderDto.OrderResponse changeOrderStatusByManufacturer(Long manufacturerId, Long orderId, String newStatusKey) {
-        Order order = orderRepository.findByManufacturerIdAndId(manufacturerId, orderId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
+    public OrderDto.OrderResponse changeOrderStatusByManufacturer(Long manufacturerId, Long orderId, OrderDto.OrderStatusChangeRequest statusChangeRequest) {
+        Order order = orderRepository.findByManufacturerIdAndId(manufacturerId, orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
 
         if (order.getStatus().equals(OrderStatus.CANCELED)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 취소된 주문입니다.");
         }
 
-        OrderStatus newStatus = getOrderStatusFromKey(newStatusKey);
-
+        OrderStatus newStatus = getOrderStatusFromKey(statusChangeRequest.getNewStatus());
         order.setStatus(newStatus);
+
+        // 배송번호는 주문 상태가 PRODUCTED로 변경될 때만 입력
+        if (newStatus == OrderStatus.PRODUCTED && statusChangeRequest.getShippingNumber() != null) {
+            order.setShippingNumber(statusChangeRequest.getShippingNumber());
+        }
+
         orderRepository.save(order);
-        log.info("변경된 주문 상태: {}", newStatusKey);
+        log.info("변경된 주문 상태: {}, 배송번호: {}", newStatus, statusChangeRequest.getShippingNumber());
 
         return OrderDto.OrderResponse.from(orderRepository.save(order));
     }
