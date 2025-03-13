@@ -39,43 +39,36 @@ public class ReviewService {
     private final FileService fileService;
 
     public ReviewDto.ReviewResponseDto addReview(Long userId, ReviewDto.ReviewRequestDto requestDto) {
-        Manufacturer manufacturer = manufacturerRepository.findById(requestDto.getManufacturerId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조업체를 찾을 수 없습니다."));
+        Order order = orderRepository.findById(requestDto.getOrderId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
 
-        List<Order> orders = orderRepository.findByUserIdAndManufacturerIdAndStatus(
-                userId, requestDto.getManufacturerId(), OrderStatus.DELIVERED);
-
-        if (orders.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "해당 제조업체에 주문 완료된 유저만 리뷰를 남길 수 있습니다.");
+        if (order.getReview() != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이 주문에 대한 리뷰가 이미 존재합니다.");
         }
+
+        Manufacturer manufacturer = manufacturerRepository.findById(order.getManufacturer().getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조업체를 찾을 수 없습니다."));
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
 
         List<File> images = saveImages(requestDto.getImageFiles());
 
-
         Review review = Review.builder()
                 .user(user)
                 .manufacturer(manufacturer)
-                .images(images)
+                .order(order)
                 .content(requestDto.getContent())
                 .rating(requestDto.getRating())
                 .createdAt(LocalDateTime.now())
+                .images(images)
                 .build();
 
-        reviewRepository.save(review);
-        manufacturer.setTotalReviews(manufacturer.getTotalReviews() + 1);  // 리뷰 수 증가
-        manufacturerRepository.save(manufacturer);
-        updateManufacturerRating(manufacturer);
+        review = reviewRepository.save(review);
+        order.setReview(review);  // 주문에 리뷰 연결
+        orderRepository.save(order);
 
-        return new ReviewDto.ReviewResponseDto(
-                review.getId(),
-                review.getContent(),
-                review.getRating(),
-                review.getCreatedAt(),
-                images.stream().map(File::getUrl).collect(Collectors.toList())
-        );
+        return ReviewDto.ReviewResponseDto.from(review);
     }
 
     public ReviewDto.ReviewResponseDto updateReview(Long userId, Long reviewId, ReviewDto.ReviewRequestDto requestDto) {
@@ -91,21 +84,13 @@ public class ReviewService {
 
         // 새 이미지 처리
         List<File> newImages = saveImages(requestDto.getImageFiles());
-        review.getImages().clear();  // 기존 이미지 리스트를 비웁니다.
-        review.getImages().addAll(newImages);  // 새 이미지 리스트를 추가합니다.
+        review.setImages(newImages);
 
         review.setContent(requestDto.getContent());
         review.setRating(requestDto.getRating());
         reviewRepository.save(review);
-        updateManufacturerRating(review.getManufacturer());
 
-        return new ReviewDto.ReviewResponseDto(
-                review.getId(),
-                review.getContent(),
-                review.getRating(),
-                review.getCreatedAt(),
-                newImages.stream().map(File::getUrl).collect(Collectors.toList()) // 이미지 URI 리스트
-        );
+        return ReviewDto.ReviewResponseDto.from(review);
     }
 
     public void deleteReview(Long userId, Long reviewId) {

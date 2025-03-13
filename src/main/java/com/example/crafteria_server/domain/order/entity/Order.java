@@ -3,6 +3,7 @@ package com.example.crafteria_server.domain.order.entity;
 import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
 import com.example.crafteria_server.domain.model.entity.Model;
+import com.example.crafteria_server.domain.review.entity.Review;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.global.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -35,6 +36,7 @@ public class Order extends BaseEntity {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> orderItems = new ArrayList<>();
 
+
     @Column(nullable = false)
     private long purchasePrice;
 
@@ -63,6 +65,8 @@ public class Order extends BaseEntity {
     @Column(nullable = true)
     private String shippingNumber; // 배송번호
 
+    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Review review;
 
 
 }

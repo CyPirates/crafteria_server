@@ -142,4 +142,35 @@ public class ManufacturerService {
         // 제조사 엔티티 삭제
         manufacturerRepository.delete(manufacturer);
     }
+
+    // 제조사의 상세 정보 및 이미지를 조회
+    public ManufacturerDTO.ManufacturerDetailsResponse getManufacturerDetailsById(Long id) {
+        return manufacturerRepository.findById(id).map(manufacturer -> {
+            List<String> imageUrls = manufacturer.getImages().stream()
+                    .map(File::getUrl)
+                    .collect(Collectors.toList());
+
+            return new ManufacturerDTO.ManufacturerDetailsResponse(manufacturer.getDetailedIntroduction(), imageUrls);
+        }).orElse(null);
+    }
+
+    // 제조사의 상세 정보 및 이미지를 업데이트
+    public ManufacturerDTO.ManufacturerResponse updateManufacturerDetails(Long id, ManufacturerDTO.DetailedDescriptionRequest request, Long userId) throws AccessDeniedException {
+        Manufacturer manufacturer = validateManufacturerOwnership(id, userId);
+
+        // 기존 이미지 파일 삭제
+        fileService.deleteFiles(manufacturer.getImages());
+        manufacturer.getImages().clear();
+
+        // 새 이미지 파일 저장
+        List<File> newImages = request.getImages().stream()
+                .map(fileService::saveImage)
+                .collect(Collectors.toList());
+        manufacturer.getImages().addAll(newImages);
+
+        manufacturer.setDetailedIntroduction(request.getDescription());
+        manufacturerRepository.save(manufacturer);
+
+        return ManufacturerDTO.ManufacturerResponse.from(manufacturer);
+    }
 }

@@ -15,6 +15,7 @@ public class UserResponse {
     private String realname;
     private String oauth2Id;
     private Role role;
+    private String address;
 
     public static UserResponse from(User user) {
         return new UserResponse(
@@ -22,7 +23,8 @@ public class UserResponse {
                 user.getUsername(),
                 user.getRealname(),
                 user.getOauth2Id(),
-                user.getRole()
+                user.getRole(),
+                user.getAddress()
         );
     }
 }
