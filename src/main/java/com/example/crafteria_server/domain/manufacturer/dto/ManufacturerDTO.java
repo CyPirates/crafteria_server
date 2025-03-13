@@ -2,6 +2,7 @@ package com.example.crafteria_server.domain.manufacturer.dto;
 
 
 import com.example.crafteria_server.domain.equipment.dto.EquipmentDto;
+import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
 import com.example.crafteria_server.domain.technology.dto.TechnologyDto;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -60,7 +61,6 @@ public class ManufacturerDTO {
 
         @Schema(description = "장비 리스트")
         private List<EquipmentDto.EquipmentResponse> equipmentList;
-
 
         @NotNull
         @Schema(description = "총 리뷰 수", example = "100")
@@ -127,5 +127,38 @@ public class ManufacturerDTO {
 
 
 
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DetailedDescriptionRequest {
+        @Schema(description = "상세 설명 텍스트", example = "상세 설명 텍스트")
+        private String description; // 상세 설명 텍스트
+
+        @Schema(description = "최대 5개의 이미지 파일")
+        private List<MultipartFile> images; // 최대 5개의 이미지 파일
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ManufacturerDetailsResponse {
+        private String detailedIntroduction;
+        private List<String> imageUrls;  // 이미지 URL 목록 추가
+
+        public static ManufacturerDetailsResponse from(Manufacturer manufacturer) {
+            List<String> urls = manufacturer.getImages().stream()
+                    .map(File::getUrl)
+                    .collect(Collectors.toList());
+            return new ManufacturerDetailsResponse(
+                    manufacturer.getDetailedIntroduction(),
+                    urls
+            );
+        }
     }
 }
