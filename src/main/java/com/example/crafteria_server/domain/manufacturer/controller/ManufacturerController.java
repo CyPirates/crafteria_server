@@ -1,6 +1,7 @@
 package com.example.crafteria_server.domain.manufacturer.controller;
 
 import com.example.crafteria_server.domain.manufacturer.dto.ManufacturerDTO;
+import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
 import com.example.crafteria_server.domain.manufacturer.service.ManufacturerService;
 import com.example.crafteria_server.global.response.JsonBody;
 import com.example.crafteria_server.global.security.PrincipalDetails;
@@ -98,5 +99,36 @@ public class ManufacturerController {
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .body(JsonBody.of(204, "제조사 삭제 성공", null));
+    }
+
+    // 제조사 상세 설명 업데이트
+    @Operation(summary = "제조사 상세 설명 업데이트", description = "제조사의 상세 설명과 이미지를 업데이트합니다.")
+    @PreAuthorize("hasRole('DASHBOARD')") // DASHBOARD 권한만 허용
+    @PostMapping(value="/{id}/details",consumes = "multipart/form-data")
+    public ResponseEntity<JsonBody<ManufacturerDTO.ManufacturerResponse>> updateManufacturerDetails(
+            @PathVariable Long id,
+            @ModelAttribute ManufacturerDTO.DetailedDescriptionRequest request,
+            @AuthenticationPrincipal PrincipalDetails principalDetails) throws AccessDeniedException {
+
+        ManufacturerDTO.ManufacturerResponse response = manufacturerService.updateManufacturerDetails(id, request, principalDetails.getUserId());
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(JsonBody.of(200, "제조사 상세 설명 업데이트 성공", response));
+    }
+
+    @Operation(summary = "제조사 상세 정보 조회", description = "제조사의 상세 정보를 조회합니다.")
+    @GetMapping("/{id}/details")
+    public ResponseEntity<JsonBody<ManufacturerDTO.ManufacturerDetailsResponse>> getManufacturerDetails(@PathVariable Long id) {
+        ManufacturerDTO.ManufacturerDetailsResponse details = manufacturerService.getManufacturerDetailsById(id);
+
+        if (details == null) {
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(JsonBody.of(404, "제조사를 찾을 수 없습니다.", null));
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(JsonBody.of(200, "상세 설명 조회 성공", details));
     }
 }

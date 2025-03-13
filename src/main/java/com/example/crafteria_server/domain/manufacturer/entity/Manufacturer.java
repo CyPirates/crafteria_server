@@ -70,4 +70,11 @@ public class Manufacturer extends BaseEntity {
 
     @OneToMany(mappedBy = "manufacturer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Technology> technologies = new ArrayList<>();
+
+    @Column(length = 4000)
+    private String detailedIntroduction; // 상세 소개
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JoinColumn(name = "manufacturer_id")
+    private List<File> images = new ArrayList<>(); // 이미지 리스트
 }
