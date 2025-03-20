@@ -45,6 +45,7 @@ public class EquipmentService {
                 .status(EquipmentStatus.Available)  // 기본값으로 상태 설정
                 .manufacturer(manufacturer)
                 .image(savedFile)
+                .printSpeed(request.getPrintSpeed())
                 .build();
 
         Equipment savedEquipment = equipmentRepository.save(equipment);
@@ -82,6 +83,10 @@ public class EquipmentService {
     public EquipmentDto.EquipmentResponse updateEquipment(Long id, EquipmentDto.EquipmentRequest request) {
         Equipment equipment = equipmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Equipment not found"));
+
+        if (request.getPrintSpeed() != null) {
+            equipment.setPrintSpeed(request.getPrintSpeed());
+        }
 
         Manufacturer existingManufacturer = equipment.getManufacturer();
 

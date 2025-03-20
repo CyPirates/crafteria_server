@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,6 +26,7 @@ public class OrderDto {
         @NotNull
         @Schema(description = "유저 ID", example = "1")
         private long userId;
+
 
         @NotNull
         @Schema(description = "제조사 ID", example = "1")
@@ -67,6 +69,9 @@ public class OrderDto {
         @Schema(description = "결제 ID", example = "8a74a3a2-3b4f-4c09-945e-809498b8b300")
         private String paymentId; // 결제 ID 필드 추가
 
+        @Schema(description = "주문 날짜", example = "2023-01-15T12:34:56")
+        private LocalDateTime orderDate; // 주문 날짜 필드 추가
+
         public static OrderResponse from(Order order) {
             return OrderResponse.builder()
                     .orderId(order.getId())
@@ -93,6 +98,7 @@ public class OrderDto {
                                     .technologyId(orderItem.getTechnology().getId())
                                     .build())
                             .collect(Collectors.toList()))
+                    .orderDate(order.getCreateDate())
                     .build();
         }
     }
