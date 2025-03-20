@@ -36,6 +36,9 @@ public class EquipmentDto {
         @Schema(description = "제조사 id", example = "1")
         private Long manufacturerId;
 
+        @Schema(description = "출력 속도", example = "100(mm/s)")
+        private Double printSpeed;
+
         public static EquipmentResponse from(Equipment equipment) {
             return EquipmentResponse.builder()
                     .id(equipment.getId())
@@ -43,6 +46,7 @@ public class EquipmentDto {
                     .status(equipment.getStatus().name())
                     .imageFileUrl(equipment.getImage().getUrl())
                     .manufacturerId(equipment.getManufacturer().getId())
+                    .printSpeed(equipment.getPrintSpeed())
                     .build();
         }
     }
@@ -67,6 +71,9 @@ public class EquipmentDto {
         @NotNull
         @Schema(description = "제조사 id", example = "1")
         private Long manufacturerId;
+
+        @Schema(description = "출력 속도", example = "100(mm/s)")
+        private Double printSpeed;
 
     }
 }

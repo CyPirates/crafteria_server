@@ -47,7 +47,7 @@ spring:
               scope:
                 - name
                 - email
-              client-name: Naver
+              client-name: naver
               authorization-grant-type: authorization_code
               redirect-uri: ${NAVER_REDIRECT_URI}
 
