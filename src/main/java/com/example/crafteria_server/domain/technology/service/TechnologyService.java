@@ -73,4 +73,11 @@ public class TechnologyService {
     public List<Technology> getAllTechnologiesByManufacturer(Long manufacturerId) {
         return technologyRepository.findByManufacturerId(manufacturerId);
     }
+
+    public TechnologyDto.TechnologyResponse getTechnologyById(Long id) {
+        Technology technology = technologyRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Technology not found with id: " + id));
+
+        return TechnologyDto.TechnologyResponse.from(technology);
+    }
 }
