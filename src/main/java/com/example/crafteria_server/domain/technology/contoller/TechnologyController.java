@@ -56,4 +56,11 @@ public class TechnologyController {
         List<TechnologyDto.TechnologyResponse> responses = technologies.stream().map(TechnologyDto.TechnologyResponse::from).collect(Collectors.toList());
         return ResponseEntity.ok(JsonBody.of(200, "Technologies retrieved successfully", responses));
     }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "기술 조회", description = "주어진 ID로 특정 기술을 조회합니다.")
+    public ResponseEntity<JsonBody<TechnologyDto.TechnologyResponse>> getTechnologyById(@PathVariable Long id) {
+        TechnologyDto.TechnologyResponse response = technologyService.getTechnologyById(id);
+        return ResponseEntity.ok(JsonBody.of(200, "Technology retrieved successfully", response));
+    }
 }

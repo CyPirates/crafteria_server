@@ -27,13 +27,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findByManufacturerId(Long manufacturerId);
 
+
     List<Order> findByUserIdAndManufacturerIdAndStatus(Long userId, Long manufacturerId, OrderStatus status);
+    // 특정일 매출 총액 및 건수
     @Query("SELECT CAST(o.createDate AS date) AS salesDate, " +
             "SUM(o.purchasePrice) AS totalSalesAmount, " +
             "COUNT(o) AS totalOrders " +
             "FROM Order o " +
             "WHERE o.manufacturer.id = :manufacturerId " +
             "AND CAST(o.createDate AS date) = :specificDate " +
+            "AND o.status != 'CANCELED' " +
             "GROUP BY CAST(o.createDate AS date)")
     SalesStatisticsProjection findSalesStatisticsByDate(
             @Param("manufacturerId") Long manufacturerId,
@@ -45,7 +48,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "FROM Order o " +
             "WHERE o.manufacturer.id = :manufacturerId " +
             "AND o.createDate >= :startDateTime " +
-            "AND o.createDate <= :endDateTime")
+            "AND o.createDate <= :endDateTime " +
+            "AND o.status != 'CANCELED' ")
     PeriodSalesStatisticsProjection findSalesStatisticsByPeriod(
             @Param("manufacturerId") Long manufacturerId,
             @Param("startDateTime") LocalDateTime startDateTime,
@@ -58,6 +62,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "FROM Order o " +
             "WHERE o.manufacturer.id = :manufacturerId " +
             "AND o.createDate BETWEEN :startDate AND :endDate " +
+            "AND o.status != 'CANCELED' " +
             "GROUP BY YEAR(o.createDate), MONTH(o.createDate) " +
             "ORDER BY YEAR(o.createDate), MONTH(o.createDate)")
     List<MonthlySalesStatisticsProjection> findMonthlySalesStatistics(
