@@ -59,13 +59,13 @@ public class OrderController {
         return JsonBody.of(200, "주문이 취소되었습니다.", orderService.cancelOrderByUser(principalDetails.getUserId(), orderId));
     }
 
-    @Operation(summary = "제조사에서 주문 상태 및 배송 번호 변경(PRODUCTED가 아닌 상태에서는 배송번호 입력 무시됨)", description = "주문 상태를 변경하고,배송 번호를 변경합니다.")
+    @Operation(summary = "제조사에서 주문 상태 변경", description = "주문 상태를 변경합니다.")
     @PostMapping("/manufacturer/change-status/{orderId}")
     public JsonBody<OrderDto.OrderResponse> changeOrderStatus(@RequestParam Long manufacturerId,
-                                              @RequestBody OrderDto.OrderStatusChangeRequest statusChangeRequest,
-                                              @PathVariable Long orderId) {
+                                                              @RequestBody OrderDto.OrderStatusChangeRequest statusChangeRequest,
+                                                              @PathVariable Long orderId) {
 
-        return JsonBody.of(200, "주문 상태 및 배송번호가 변경되었습니다.",
+        return JsonBody.of(200, "주문 상태가 변경되었습니다.",
                 orderService.changeOrderStatusByManufacturer(manufacturerId, orderId, statusChangeRequest));
     }
 

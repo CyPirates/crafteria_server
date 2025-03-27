@@ -199,7 +199,5 @@ public class OrderDto {
         @Schema(description = "새 주문 상태", example = "PRODUCTED")
         private String newStatus;
 
-        @Schema(description = "배송 번호", example = "KR1234567890")
-        private String shippingNumber;
     }
 }
