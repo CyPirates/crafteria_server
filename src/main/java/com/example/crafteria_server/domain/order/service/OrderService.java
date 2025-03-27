@@ -128,15 +128,10 @@ public class OrderService {
         OrderStatus newStatus = getOrderStatusFromKey(statusChangeRequest.getNewStatus());
         order.setStatus(newStatus);
 
-        // 배송번호는 주문 상태가 PRODUCTED로 변경될 때만 입력
-        if (newStatus == OrderStatus.PRODUCTED && statusChangeRequest.getShippingNumber() != null) {
-            order.setShippingNumber(statusChangeRequest.getShippingNumber());
-        }
-
         orderRepository.save(order);
-        log.info("변경된 주문 상태: {}, 배송번호: {}", newStatus, statusChangeRequest.getShippingNumber());
+        log.info("변경된 주문 상태: {}", newStatus);
 
-        return OrderDto.OrderResponse.from(orderRepository.save(order));
+        return OrderDto.OrderResponse.from(order);
     }
 
     private OrderStatus getOrderStatusFromKey(String key) {
