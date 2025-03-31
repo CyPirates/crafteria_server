@@ -49,11 +49,19 @@ public class ModelService {
                 .toList();
     }
 
-    public UserModelDto.ModelResponse getModelDetail(Long modelId) {
+    public UserModelDto.ModelResponse getModelDetail(Long modelId, Long userId) {
         Model model = modelRepository.findById(modelId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
+        boolean isPurchased = checkIfModelPurchased(userId, modelId);
+
+        UserModelDto.ModelResponse response = UserModelDto.ModelResponse.from(model);
+        response.setPurchased(isPurchased);  // 구매 여부 설정
+
+        // 조회수 업데이트
         model.setViewCount(model.getViewCount() + 1);
-        return UserModelDto.ModelResponse.from(modelRepository.save(model));
+        modelRepository.save(model);
+
+        return response;
     }
 
     public UserModelDto.ModelResponse uploadModel(Long userId, UserModelDto.ModelUploadRequest request) {
@@ -148,6 +156,43 @@ public class ModelService {
 
     private boolean checkIfModelPurchased(Long userId, Long modelId) {
         return modelPurchaseRepository.findByUserIdAndModelId(userId, modelId).isPresent();
+    }
+
+    // 도면 수정
+    public UserModelDto.ModelResponse updateModel(Long modelId, Long userId, UserModelDto.ModelUploadRequest request) {
+        Model model = modelRepository.findById(modelId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
+
+        // 유저가 도면의 작가인지 확인
+        if (!model.getAuthor().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "이 도면을 수정할 권한이 없습니다.");
+        }
+
+        model.setName(request.getName());
+        model.setDescription(request.getDescription());
+        model.setPrice(request.getPrice());
+        model.setWidthSize(request.getWidthSize());
+        model.setLengthSize(request.getLengthSize());
+        model.setHeightSize(request.getHeightSize());
+
+        // 파일 업데이트 (선택적)
+        if (request.getModelFile() != null) {
+            File modelFile = fileService.saveModel(request.getModelFile());
+            model.setModelFile(modelFile);
+        }
+
+        return UserModelDto.ModelResponse.from(modelRepository.save(model));
+    }
+
+    // 도면 삭제
+    public void deleteModel(Long modelId, Long userId) {
+        Model model = modelRepository.findById(modelId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
+
+        // 유저가 도면의 작가인지 확인
+        if (!model.getAuthor().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "이 도면을 삭제할 권한이 없습니다.");
+        }
+
+        modelRepository.delete(model);
     }
 }
 

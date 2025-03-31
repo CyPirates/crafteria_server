@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "user")
 @Getter
@@ -37,5 +39,8 @@ public class User extends BaseEntity {
 
     @OneToOne(mappedBy = "dashboardUser", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Manufacturer manufacturer;  // 제조사와 1대1 매핑
+
+    @Column(name = "ban_until")
+    private LocalDateTime banUntil;
 
 }

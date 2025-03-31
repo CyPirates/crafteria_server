@@ -4,18 +4,23 @@ import com.example.crafteria_server.domain.user.dto.UserResponse;
 import com.example.crafteria_server.domain.user.dto.UserUpdateRequest;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.domain.user.service.UserInfoService;
+import com.example.crafteria_server.domain.user.service.UserService;
 import com.example.crafteria_server.global.response.JsonBody;
 import com.example.crafteria_server.global.security.PrincipalDetails;
 import com.google.api.Authentication;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.nio.file.AccessDeniedException;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -23,6 +28,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserInfoController {
     private final UserInfoService userInfoService;
+    private final UserService userService;
 
 
     // 로그인한 사용자 정보 조회 API
@@ -72,5 +78,21 @@ public class UserInfoController {
 
         User updatedUser = userInfoService.updateCurrentUser(principalDetails.getUserId(), request);
         return ResponseEntity.ok(UserResponse.from(updatedUser));
+    }
+
+    @DeleteMapping("/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "유저 삭제", description = "특정 사용자를 삭제합니다.")
+    public ResponseEntity<?> deleteUser(@PathVariable Long userId, @AuthenticationPrincipal PrincipalDetails principalDetails) throws AccessDeniedException {
+        userService.deleteUser(userId, principalDetails);
+        return ResponseEntity.ok("User deleted successfully.");
+    }
+
+    @PostMapping("/{userId}/ban")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "유저 정지", description = "특정 사용자를 정지합니다.")
+    public ResponseEntity<?> banUser(@PathVariable Long userId, @RequestParam("until") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime until, @AuthenticationPrincipal PrincipalDetails principalDetails) throws AccessDeniedException {
+        userService.banUser(userId, until, principalDetails);
+        return ResponseEntity.ok("User banned until " + until);
     }
 }
