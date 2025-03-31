@@ -43,4 +43,11 @@ public class AuthController {
         String manufacturerId = userService.getLoggedInUserManufacturerId(principalDetails);
         return ResponseEntity.ok(manufacturerId);
     }
+
+    @PostMapping("/check-username")
+    @Operation(summary = "아이디 중복 체크", description = "입력된 아이디가 이미 사용 중인지 확인합니다.")
+    public ResponseEntity<JsonBody<Boolean>> checkUsernameAvailability(@RequestParam String username) {
+        boolean isAvailable = userService.checkUsernameAvailability(username);
+        return ResponseEntity.ok(JsonBody.of(200, "아이디 중복 검사 결과", isAvailable));
+    }
 }

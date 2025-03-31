@@ -21,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.nio.file.AccessDeniedException;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -85,6 +87,11 @@ public class UserService implements UserDetailsService {
             throw new BadCredentialsException("비밀번호가 일치하지 않습니다.");
         }
 
+        // Ban 상태 확인
+        if (user.getBanUntil() != null && user.getBanUntil().isAfter(LocalDateTime.now())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "계정이 정지된 상태입니다. 정지 해제일: " + user.getBanUntil());
+        }
+
         // JWT 토큰 생성
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 new PrincipalDetails(user), null, new PrincipalDetails(user).getAuthorities());
@@ -112,5 +119,27 @@ public class UserService implements UserDetailsService {
                 .map(manufacturer -> manufacturer.getId().toString())
                 .map(Object::toString)
                 .orElse("대시보드 유저에게 매칭된 제조사가 없습니다.");
+    }
+
+    public boolean checkUsernameAvailability(String username) {
+        return !userRepository.existsByUsername(username);
+    }
+
+    public void deleteUser(Long userId, PrincipalDetails principalDetails) throws AccessDeniedException {
+        if (principalDetails.getUser().getRole() != Role.ADMIN) {
+            throw new AccessDeniedException("ADMIN 권한이 필요합니다.");
+        }
+        userRepository.deleteById(userId);
+    }
+
+    public void banUser(Long userId, LocalDateTime until, PrincipalDetails principalDetails) throws AccessDeniedException {
+        if (principalDetails.getUser().getRole() != Role.ADMIN) {
+            throw new AccessDeniedException("ADMIN 권한이 필요합니다.");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+        user.setBanUntil(until);
+        userRepository.save(user);
     }
 }
