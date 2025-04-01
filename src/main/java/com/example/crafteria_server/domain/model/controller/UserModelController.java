@@ -35,10 +35,7 @@ public class UserModelController {
     @GetMapping("/view/{modelId}")
     @Operation(summary = "도면 상세 조회", description = "도면 상세 정보를 조회합니다.")
     public JsonBody<UserModelDto.ModelResponse> getModelDetail(@PathVariable Long modelId, @AuthenticationPrincipal PrincipalDetails principalDetails) {
-        if (principalDetails == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
-        }
-        Long userId = principalDetails.getUserId();
+        Optional<Long> userId = Optional.ofNullable(principalDetails).map(PrincipalDetails::getUserId);
         UserModelDto.ModelResponse modelDetail = modelService.getModelDetail(modelId, userId);
         return JsonBody.of(200, "성공", modelDetail);
     }
