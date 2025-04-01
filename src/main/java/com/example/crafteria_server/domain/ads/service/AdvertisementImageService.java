@@ -25,7 +25,7 @@ public class AdvertisementImageService {
     /**
      * 광고 이미지 업로드
      */
-    public AdvertisementImage uploadAdvertisementImage(MultipartFile imageFile, String title, String description) {
+    public AdvertisementImage uploadAdvertisementImage(MultipartFile imageFile, String title, String linkurl) {
         if (imageFile == null || imageFile.isEmpty()) {
             throw new IllegalArgumentException("업로드할 이미지 파일이 필요합니다.");
         }
@@ -37,7 +37,7 @@ public class AdvertisementImageService {
         AdvertisementImage advertisementImage = AdvertisementImage.builder()
                 .file(savedFile)
                 .title(title)
-                .description(description)
+                .linkurl(linkurl)
                 .build();
 
         // DB 저장

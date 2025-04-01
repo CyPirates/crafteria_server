@@ -22,6 +22,6 @@ public class AdvertisementImage extends BaseEntity {
     @Column(name = "title", nullable = false)
     private String title; // 광고 이미지 제목
 
-    @Column(name = "description", length = 1000)
-    private String description; // 광고 이미지 설명
+    @Column(name = "linkurl", length = 1000)
+    private String linkurl; // 광고 이미지 설명
 }
