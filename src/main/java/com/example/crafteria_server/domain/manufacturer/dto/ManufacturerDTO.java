@@ -69,6 +69,15 @@ public class ManufacturerDTO {
         @Schema(description = "기술 목록")
         private List<TechnologyDto.TechnologyResponse> technologies;
 
+        @Schema(description = "필리아멘트 출력 속도", example = "50.5")
+        private Float printSpeedFilament;
+
+        @Schema(description = "파우더 출력 속도", example = "30.2")
+        private Float printSpeedPowder;
+
+        @Schema(description = "리퀴드 출력 속도", example = "40.3")
+        private Float printSpeedLiquid;
+
         public static ManufacturerResponse from(Manufacturer manufacturer) {
             return ManufacturerResponse.builder()
                     .id(manufacturer.getId())
@@ -89,6 +98,9 @@ public class ManufacturerDTO {
                     .technologies(manufacturer.getTechnologies().stream()
                             .map(TechnologyDto.TechnologyResponse::from)
                             .collect(Collectors.toList()))
+                    .printSpeedFilament(manufacturer.getPrintSpeedFilament())
+                    .printSpeedLiquid(manufacturer.getPrintSpeedLiquid())
+                    .printSpeedPowder(manufacturer.getPrintSpeedPowder())
                     .build();
         }
 
@@ -125,6 +137,14 @@ public class ManufacturerDTO {
         @Schema(description = "대표 이미지", example = "image.jpg")
         private MultipartFile image;
 
+        @Schema(description = "필리아멘트 출력 속도", example = "50.5")
+        private Float printSpeedFilament;
+
+        @Schema(description = "파우더 출력 속도", example = "30.2")
+        private Float printSpeedPowder;
+
+        @Schema(description = "리퀴드 출력 속도", example = "40.3")
+        private Float printSpeedLiquid;
 
 
     }

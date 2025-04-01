@@ -63,10 +63,10 @@ public class UserModelDto {
         private String modelFileUrl;
 
         @NotNull
-        @Schema(description = "구매 여부", example = "true")
-        private boolean purchased;
+        @Schema(description = "구매 가능 여부", example = "true")
+        private boolean purchaseAvailability;
 
-        public static ModelResponse from(Model model) {
+        public static ModelResponse from(Model model, boolean purchaseAvailability) {
             return ModelResponse.builder()
                     .id(model.getId())
                     .author(AuthorDto.AuthorResponse.from(model.getAuthor()))
@@ -79,7 +79,7 @@ public class UserModelDto {
                     .widthSize(model.getWidthSize())
                     .lengthSize(model.getLengthSize())
                     .heightSize(model.getHeightSize())
-                    .purchased(false)
+                    .purchaseAvailability(purchaseAvailability)
                     .modelFileUrl(model.getModelFile().getUrl())
                     .build();
         }

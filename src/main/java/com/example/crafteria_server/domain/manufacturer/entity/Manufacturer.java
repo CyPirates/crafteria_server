@@ -77,4 +77,14 @@ public class Manufacturer extends BaseEntity {
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "manufacturer_id")
     private List<File> images = new ArrayList<>(); // 이미지 리스트
+
+    @Column(name = "print_speed_filament", nullable = true)
+    private Float printSpeedFilament; // 필리아멘트 재료의 출력 속도
+
+    @Column(name = "print_speed_powder", nullable = true)
+    private Float printSpeedPowder; // 파우더 재료의 출력 속도
+
+    @Column(name = "print_speed_liquid", nullable = true)
+    private Float printSpeedLiquid; // 리퀴드 재료의 출력 속도
+
 }
