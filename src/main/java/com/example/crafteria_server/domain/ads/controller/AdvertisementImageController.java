@@ -31,9 +31,9 @@ public class AdvertisementImageController {
     public ResponseEntity<JsonBody<AdvertisementImage>> uploadAdvertisementImage(
             @RequestParam("imageFile") MultipartFile imageFile,
             @RequestParam("title") String title,
-            @RequestParam(value = "description", required = false) String description) {
+            @RequestParam(value = "linkurl", required = false) String linkurl) {
 
-        AdvertisementImage advertisementImage = advertisementImageService.uploadAdvertisementImage(imageFile, title, description);
+        AdvertisementImage advertisementImage = advertisementImageService.uploadAdvertisementImage(imageFile, title, linkurl);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(JsonBody.of(201, "광고 이미지 업로드 성공", advertisementImage));
     }
