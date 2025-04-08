@@ -20,6 +20,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j(topic = "OrderService")
@@ -46,9 +48,10 @@ public class OrderService {
 
     public List<OrderDto.OrderResponse> getMyOrderList(Long userId, int page) {
         PageRequest pageable = PageRequest.of(page, 10);
-        return orderRepository.findAllByUserId(userId, pageable).stream()
+        List<Order> orders = orderRepository.findAllByUserIdExcludingOrdered(userId, pageable);
+        return orders.stream()
                 .map(OrderDto.OrderResponse::from)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     public OrderDto.OrderResponse getOrderDetail(Long userId, Long orderId) {
@@ -151,12 +154,10 @@ public class OrderService {
     }
 
     public List<OrderDto.OrderResponse> getAllOrdersByManufacturer(Long manufacturerId) {
-        List<Order> orders = orderRepository.findByManufacturerId(manufacturerId);
-
-        // 주문 엔티티를 DTO로 변환하여 반환
+        List<Order> orders = orderRepository.findAllByManufacturerIdExcludingOrdered(manufacturerId, Pageable.unpaged());
         return orders.stream()
                 .map(OrderDto.OrderResponse::from)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     public OrderDto.OrderResponse getOrderDetailForDashboardUser(Long dashboardUserId, Long orderId) {

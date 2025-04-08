@@ -1,6 +1,7 @@
 package com.example.crafteria_server.domain.pay.service;
 
 import com.example.crafteria_server.domain.order.entity.Order;
+import com.example.crafteria_server.domain.order.entity.OrderStatus;
 import com.example.crafteria_server.domain.order.repository.OrderRepository;
 import com.example.crafteria_server.domain.pay.dto.PaymentDto;
 import jakarta.transaction.Transactional;
@@ -50,22 +51,23 @@ public class PaymentService {
         }
 
         PaymentDto.PaymentResponse payment = response.getBody();
-        if (!payment.getAmount().equals(order.getPurchasePrice())) {
+        if (payment == null || !payment.getAmount().equals(order.getPurchasePrice())) {
             throw new Exception("결제 금액이 주문 금액과 일치하지 않습니다.");
         }
 
-        // 다른 결제 상태들을 처리
+        // 결제 상태에 따른 주문 상태 업데이트
         switch (payment.getStatus()) {
             case "VIRTUAL_ACCOUNT_ISSUED":
-                // 가상 계좌 발급 상태 처리
+                order.setStatus(OrderStatus.IN_PRODUCTING); // 예시로 IN_PRODUCTING 설정, 실제 상황에 맞게 조정 필요
                 break;
             case "PAID":
-                // 결제 성공 상태 처리
+                order.setStatus(OrderStatus.PAID);
                 break;
             default:
                 throw new Exception("처리되지 않은 결제 상태: " + payment.getStatus());
         }
 
+        orderRepository.save(order);  // 상태 변경 후 저장
         return new PaymentDto.PaymentResultDto(payment.getStatus(), "결제가 성공적으로 처리되었습니다.");
     }
 }
