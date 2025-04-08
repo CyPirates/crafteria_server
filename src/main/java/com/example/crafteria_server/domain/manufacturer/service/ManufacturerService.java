@@ -52,6 +52,9 @@ public class ManufacturerService {
                 .address(request.getAddress())
                 .dialNumber(request.getDialNumber())
                 .representativeEquipment(request.getRepresentativeEquipment())
+                .printSpeedFilament(request.getPrintSpeedFilament())
+                .printSpeedPowder(request.getPrintSpeedPowder())
+                .printSpeedLiquid(request.getPrintSpeedLiquid())
                 .image(savedFile)
                 .dashboardUser(dashboardUser)
                 .technologies(new ArrayList<>()) // 기술 목록을 빈 리스트로 초기화
@@ -125,6 +128,9 @@ public class ManufacturerService {
         manufacturer.setAddress(request.getAddress());
         manufacturer.setDialNumber(request.getDialNumber());
         manufacturer.setRepresentativeEquipment(request.getRepresentativeEquipment());
+        manufacturer.setPrintSpeedFilament(request.getPrintSpeedFilament());
+        manufacturer.setPrintSpeedPowder(request.getPrintSpeedPowder());
+        manufacturer.setPrintSpeedLiquid(request.getPrintSpeedLiquid());
 
         Manufacturer updatedManufacturer = manufacturerRepository.save(manufacturer);
         return ManufacturerDTO.ManufacturerResponse.from(updatedManufacturer);

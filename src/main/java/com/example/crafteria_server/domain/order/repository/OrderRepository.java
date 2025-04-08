@@ -27,6 +27,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findByManufacturerId(Long manufacturerId);
 
+    @Query("SELECT o FROM Order o WHERE o.user.id = :userId AND o.status != 'ORDERED'")
+    List<Order> findAllByUserIdExcludingOrdered(Long userId, Pageable pageable);
+
+    @Query("SELECT o FROM Order o WHERE o.manufacturer.id = :manufacturerId AND o.status != 'ORDERED'")
+    List<Order> findAllByManufacturerIdExcludingOrdered(Long manufacturerId, Pageable pageable);
 
     List<Order> findByUserIdAndManufacturerIdAndStatus(Long userId, Long manufacturerId, OrderStatus status);
     // 특정일 매출 총액 및 건수
