@@ -1,6 +1,7 @@
 package com.example.crafteria_server.domain.order.controller;
 
 
+import com.example.crafteria_server.domain.file.service.FileService;
 import com.example.crafteria_server.domain.order.dto.OrderDto;
 import com.example.crafteria_server.domain.order.service.OrderService;
 import com.example.crafteria_server.global.response.JsonBody;
@@ -9,10 +10,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @Slf4j(topic = "OrderController")
@@ -20,6 +24,7 @@ import java.util.List;
 @RequestMapping("/api/v1/order")
 public class OrderController {
     private final OrderService orderService;
+    private final FileService fileService;
 
     @Operation(summary = "내 주문 목록 조회", description = "내 주문 목록을 조회합니다.")
     @GetMapping("/my")
@@ -39,8 +44,12 @@ public class OrderController {
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public JsonBody<OrderDto.OrderResponse> createOrder(
             @AuthenticationPrincipal PrincipalDetails principalDetails,
-            @ModelAttribute OrderDto.OrderRequest request) {
-        return JsonBody.of(200, "성공", orderService.createOrder(principalDetails.getUserId(), request));
+            @RequestPart("request") OrderDto.OrderRequest request,
+            @RequestPart("files") List<MultipartFile> files) {
+        log.info("request: {}", request.getOrderItems().stream()
+                .map(Object::toString)
+                .collect(Collectors.joining(", ")));
+        return JsonBody.of(200, "성공", orderService.createOrder(principalDetails.getUserId(), request, files));
     }
 
     @Operation(summary = "주문 취소", description = "주문을 취소합니다.")
@@ -53,10 +62,11 @@ public class OrderController {
     @Operation(summary = "제조사에서 주문 상태 변경", description = "주문 상태를 변경합니다.")
     @PostMapping("/manufacturer/change-status/{orderId}")
     public JsonBody<OrderDto.OrderResponse> changeOrderStatus(@RequestParam Long manufacturerId,
-                                              @RequestParam String newStatusKey,
-                                              @PathVariable Long orderId) {
+                                                              @RequestBody OrderDto.OrderStatusChangeRequest statusChangeRequest,
+                                                              @PathVariable Long orderId) {
 
-        return JsonBody.of(200, "주문 상태가 변경되었습니다.",orderService.changeOrderStatusByManufacturer(manufacturerId, orderId, newStatusKey));
+        return JsonBody.of(200, "주문 상태가 변경되었습니다.",
+                orderService.changeOrderStatusByManufacturer(manufacturerId, orderId, statusChangeRequest));
     }
 
     @Operation(summary = "특정 제조사로 주문된 상태가 ORDERED인 모든 주문 조회", description = "특정 제조사로 주문된 상태가 ORDERED인 모든 주문을 조회합니다.")
@@ -69,5 +79,11 @@ public class OrderController {
     @GetMapping("/manufacturer/{manufacturerId}/orders")
     public JsonBody<List<OrderDto.OrderResponse>> getAllOrdersByManufacturer(@PathVariable Long manufacturerId) {
         return JsonBody.of(200, "성공", orderService.getAllOrdersByManufacturer(manufacturerId));
+    }
+
+    @Operation(summary = "대시보드 사용자 주문 상세 조회", description = "대시보드 사용자가 자신의 제조사에 연결된 주문 상세를 조회합니다.")
+    @GetMapping("/dashboard/{orderId}")
+    public JsonBody<OrderDto.OrderResponse> getOrderDetailForDashboardUser(@AuthenticationPrincipal PrincipalDetails principalDetails, @PathVariable Long orderId) {
+        return JsonBody.of(200, "성공", orderService.getOrderDetailForDashboardUser(principalDetails.getUserId(), orderId));
     }
 }

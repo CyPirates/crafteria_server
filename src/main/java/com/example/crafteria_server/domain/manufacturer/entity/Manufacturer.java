@@ -2,14 +2,14 @@ package com.example.crafteria_server.domain.manufacturer.entity;
 
 import com.example.crafteria_server.domain.equipment.entity.Equipment;
 import com.example.crafteria_server.domain.file.entity.File;
+import com.example.crafteria_server.domain.technology.entity.Technology;
+import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.global.entity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,6 +21,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Manufacturer extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -38,15 +39,16 @@ public class Manufacturer extends BaseEntity {
     @Column(name = "dial_number", length = 255)
     private String dialNumber;  // 전화번호, VARCHAR(255)
 
-    @Column(name = "production_count")
-    private Integer productionCount;  // 제작 횟수, INT
+    @Column(name = "production_count", nullable = false)
+    @Builder.Default
+    private Integer productionCount = 0;  // 제작 횟수, 기본값 0
 
-    @Column(name = "rating")
-    private Integer rating;  // 평점, INT
+    @Column(name = "rating", nullable = false)
+    @Builder.Default
+    private Integer rating = 0;  // 평점, 기본값 0
 
     @Column(name = "representative_equipment", length = 255)
     private String representativeEquipment;  // 대표 장비, VARCHAR(255)
-
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "image")
@@ -54,4 +56,35 @@ public class Manufacturer extends BaseEntity {
 
     @OneToMany(mappedBy = "manufacturer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Equipment> equipmentList = new ArrayList<>();  // 제조사가 보유한 장비 리스트
+
+    // 대시보드 계정과 1대1 매핑
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "dashboard_user_id", nullable = false)
+    private User dashboardUser;  // 대시보드 계정
+
+
+
+    @Column(name = "total_reviews", nullable = false)
+    @Builder.Default
+    private Integer totalReviews = 0;  // 총 리뷰 수, 기본값 0
+
+    @OneToMany(mappedBy = "manufacturer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Technology> technologies = new ArrayList<>();
+
+    @Column(length = 4000)
+    private String detailedIntroduction; // 상세 소개
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JoinColumn(name = "manufacturer_id")
+    private List<File> images = new ArrayList<>(); // 이미지 리스트
+
+    @Column(name = "print_speed_filament", nullable = true)
+    private Float printSpeedFilament; // 필리아멘트 재료의 출력 속도
+
+    @Column(name = "print_speed_powder", nullable = true)
+    private Float printSpeedPowder; // 파우더 재료의 출력 속도
+
+    @Column(name = "print_speed_liquid", nullable = true)
+    private Float printSpeedLiquid; // 리퀴드 재료의 출력 속도
+
 }

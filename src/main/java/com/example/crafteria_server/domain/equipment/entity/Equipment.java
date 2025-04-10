@@ -41,4 +41,7 @@ public class Equipment extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "manufacturer_id")
     private Manufacturer manufacturer;  // 장비가 소속된 제조사
+
+    @Column(name = "print_speed")
+    private Double printSpeed;  // 출력 속도
 }

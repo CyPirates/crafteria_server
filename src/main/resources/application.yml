@@ -47,7 +47,7 @@ spring:
               scope:
                 - name
                 - email
-              client-name: Naver
+              client-name: naver
               authorization-grant-type: authorization_code
               redirect-uri: ${NAVER_REDIRECT_URI}
 
@@ -81,6 +81,10 @@ spring:
     multipart:
       max-file-size: 100MB  # 업로드 가능한 최대 파일 크기
       max-request-size: 100MB  # 업로드 가능한 최대 요청 크기
+
+  portone:
+    api:
+      secret: ${PORTONE_API_SECRET}
 
 server:
   port: ${SERVER_PORT}

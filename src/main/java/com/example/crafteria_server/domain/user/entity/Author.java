@@ -3,10 +3,7 @@ package com.example.crafteria_server.domain.user.entity;
 import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.domain.model.entity.Model;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.util.ArrayList;
@@ -26,6 +23,7 @@ public class Author {
 
     // rating: 0 ~ 10
     @Column(nullable = false)
+    @Builder.Default
     private int rating = 5;
 
     // 추가된 realname 필드
@@ -36,9 +34,11 @@ public class Author {
     private String introduction;
 
     @Column(nullable = false)
+    @Builder.Default
     private long modelCount = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private long viewCount = 0;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)

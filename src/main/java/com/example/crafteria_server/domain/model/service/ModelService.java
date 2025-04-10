@@ -21,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j(topic = "ModelService")
@@ -33,18 +35,34 @@ public class ModelService {
     private final ModelPurchaseRepository modelPurchaseRepository;
     private final FileService fileService;
 
-    public List<UserModelDto.ModelResponse> getPopularList(int page) {
+    public List<UserModelDto.ModelResponse> getPopularList(int page, Optional<Long> userId) {
         Pageable pageable = PageRequest.of(page, 10);
-        return modelRepository.findAllOrderByViewCountDesc(pageable).stream()
-                .map(UserModelDto.ModelResponse::from)
-                .toList();
+        List<Model> models = modelRepository.findAllOrderByViewCountDesc(pageable).getContent();
+
+        return models.stream()
+                .map(model -> {
+                    boolean purchaseAvailability = userId
+                            .map(uId -> !uId.equals(model.getAuthor().getId()) && !checkIfModelPurchased(uId, model.getId()))
+                            .orElse(true);  // 비로그인 유저는 모든 도면을 구매할 수 있다고 가정
+                    return UserModelDto.ModelResponse.from(model, purchaseAvailability);
+                })
+                .collect(Collectors.toList());
     }
 
-    public UserModelDto.ModelResponse getModelDetail(Long modelId) {
+    public UserModelDto.ModelResponse getModelDetail(Long modelId, Optional<Long> userId) {
         Model model = modelRepository.findById(modelId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
+
+        boolean purchaseAvailability = userId
+                .map(uId -> !uId.equals(model.getAuthor().getId()) && !checkIfModelPurchased(uId, modelId))
+                .orElse(true);  // 비로그인 유저는 모든 도면을 구매할 수 있다고 가정
+
+        UserModelDto.ModelResponse response = UserModelDto.ModelResponse.from(model, purchaseAvailability);
+
         model.setViewCount(model.getViewCount() + 1);
-        return UserModelDto.ModelResponse.from(modelRepository.save(model));
+        modelRepository.save(model);
+
+        return response;
     }
 
     public UserModelDto.ModelResponse uploadModel(Long userId, UserModelDto.ModelUploadRequest request) {
@@ -52,9 +70,8 @@ public class ModelService {
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
         log.info("userid: {}", user.getId());
 
-        // Author 엔티티를 가져오거나 없으면 생성
         Author author = authorRepository.findById(user.getId()).orElseGet(() -> {
-            Author newAuthor = Author.builder()
+            return Author.builder()
                     .user(user)
                     .id(user.getId())
                     .realname(user.getRealname())  // User의 realname을 Author의 realname에 복사
@@ -62,10 +79,8 @@ public class ModelService {
                     .modelCount(0)
                     .viewCount(0)
                     .build();
-            return newAuthor;
         });
 
-        // Author가 새로 생성되었거나 기존 Author의 realname이 없을 경우 업데이트
         if (author.getRealname() == null) {
             author.setRealname(user.getRealname());
         }
@@ -73,7 +88,6 @@ public class ModelService {
         authorRepository.save(author);
 
         File modelFile = fileService.saveModel(request.getModelFile());
-
         Model newModel = Model.builder()
                 .author(author)
                 .name(request.getName())
@@ -85,17 +99,21 @@ public class ModelService {
                 .widthSize(request.getWidthSize())
                 .lengthSize(request.getLengthSize())
                 .heightSize(request.getHeightSize())
+                .category(request.getCategory())
                 .modelFile(modelFile)
                 .build();
 
-        return UserModelDto.ModelResponse.from(modelRepository.save(newModel));
+        modelRepository.save(newModel);
+        return UserModelDto.ModelResponse.from(newModel, false);  // 업로드한 도면은 구매 불가능
     }
 
     public List<UserModelDto.ModelResponse> getMyDownloadedModelList(int page, Long userId) {
         Pageable pageable = PageRequest.of(page, 10);
-        return modelPurchaseRepository.findAllByUserIdOrderByCreateDateDesc(userId, pageable).stream()
-                .map(UserModelDto.ModelResponse::from)
-                .toList();
+        List<ModelPurchase> purchases = modelPurchaseRepository.findAllByUserIdOrderByCreateDateDesc(userId, pageable).getContent();
+
+        return purchases.stream()
+                .map(purchase -> UserModelDto.ModelResponse.from(purchase.getModel(), false))
+                .collect(Collectors.toList());
     }
 
     public UserModelDto.ModelResponse purchaseModel(Long userId, Long modelId) {
@@ -103,22 +121,71 @@ public class ModelService {
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
         Model model = modelRepository.findById(modelId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "모델을 찾을 수 없습니다."));
+
+        if (model.getAuthor().getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "자신이 판매중인 도면은 구매할 수 없습니다.");
+        }
+
         modelPurchaseRepository.findByUserIdAndModelId(userId, modelId).ifPresent(modelPurchase -> {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 구매한 모델입니다.");
         });
-        modelPurchaseRepository.save(ModelPurchase.builder()
-                .user(user)
-                .model(model)
-                .build());
+
+        modelPurchaseRepository.save(ModelPurchase.builder().user(user).model(model).build());
         model.setDownloadCount(model.getDownloadCount() + 1);
-        return UserModelDto.ModelResponse.from(model);
+        modelRepository.save(model);
+
+        return UserModelDto.ModelResponse.from(model, false);
     }
 
     public List<UserModelDto.ModelResponse> getMyUploadedModelList(int page, Long userId) {
         Pageable pageable = PageRequest.of(page, 10);
-        return modelRepository.findAllByAuthorIdOrderByCreateDateDesc(userId, pageable).stream()
-                .map(UserModelDto.ModelResponse::from)
-                .toList();
+        List<Model> models = modelRepository.findAllByAuthorIdOrderByCreateDateDesc(userId, pageable).getContent();
+
+        return models.stream()
+                .map(model -> UserModelDto.ModelResponse.from(model, false))
+                .collect(Collectors.toList());
+    }
+
+    private boolean checkIfModelPurchased(Long userId, Long modelId) {
+        return modelPurchaseRepository.findByUserIdAndModelId(userId, modelId).isPresent();
+    }
+
+    // 도면 수정
+    public UserModelDto.ModelResponse updateModel(Long modelId, Long userId, UserModelDto.ModelUploadRequest request) {
+        Model model = modelRepository.findById(modelId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
+
+        if (!model.getAuthor().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "이 도면을 수정할 권한이 없습니다.");
+        }
+
+        model.setName(request.getName());
+        model.setDescription(request.getDescription());
+        model.setPrice(request.getPrice());
+        model.setWidthSize(request.getWidthSize());
+        model.setLengthSize(request.getLengthSize());
+        model.setHeightSize(request.getHeightSize());
+        model.setCategory(request.getCategory());
+
+        if (request.getModelFile() != null) {
+            File modelFile = fileService.saveModel(request.getModelFile());
+            model.setModelFile(modelFile);
+        }
+
+        modelRepository.save(model);
+        return UserModelDto.ModelResponse.from(model, false);  // 업데이트한 도면은 구매 불가능
+    }
+
+    // 도면 삭제
+    public void deleteModel(Long modelId, Long userId) {
+        Model model = modelRepository.findById(modelId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
+
+        // 유저가 도면의 작가인지 확인
+        if (!model.getAuthor().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "이 도면을 삭제할 권한이 없습니다.");
+        }
+
+        modelRepository.delete(model);
     }
 }
 
