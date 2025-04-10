@@ -56,4 +56,8 @@ public class Model extends BaseEntity {
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "model_file_id")
     private File modelFile;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ModelCategory category;
 }

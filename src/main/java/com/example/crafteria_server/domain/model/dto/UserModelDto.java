@@ -1,6 +1,7 @@
 package com.example.crafteria_server.domain.model.dto;
 
 import com.example.crafteria_server.domain.model.entity.Model;
+import com.example.crafteria_server.domain.model.entity.ModelCategory;
 import com.example.crafteria_server.domain.model.entity.ModelPurchase;
 import com.example.crafteria_server.domain.user.dto.AuthorDto;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -66,6 +67,10 @@ public class UserModelDto {
         @Schema(description = "구매 가능 여부", example = "true")
         private boolean purchaseAvailability;
 
+        @NotNull
+        @Schema(description = "모델 카테고리")
+        private ModelCategory category;
+
         public static ModelResponse from(Model model, boolean purchaseAvailability) {
             return ModelResponse.builder()
                     .id(model.getId())
@@ -79,6 +84,7 @@ public class UserModelDto {
                     .widthSize(model.getWidthSize())
                     .lengthSize(model.getLengthSize())
                     .heightSize(model.getHeightSize())
+                    .category(model.getCategory())
                     .purchaseAvailability(purchaseAvailability)
                     .modelFileUrl(model.getModelFile().getUrl())
                     .build();
@@ -135,5 +141,9 @@ public class UserModelDto {
         @NotNull
         @Schema(description = "모델 파일", format = "binary")
         private MultipartFile modelFile;
+
+        @NotNull
+        @Schema(description = "모델 카테고리")
+        private ModelCategory category;
     }
 }

@@ -99,6 +99,7 @@ public class ModelService {
                 .widthSize(request.getWidthSize())
                 .lengthSize(request.getLengthSize())
                 .heightSize(request.getHeightSize())
+                .category(request.getCategory())
                 .modelFile(modelFile)
                 .build();
 
@@ -164,6 +165,7 @@ public class ModelService {
         model.setWidthSize(request.getWidthSize());
         model.setLengthSize(request.getLengthSize());
         model.setHeightSize(request.getHeightSize());
+        model.setCategory(request.getCategory());
 
         if (request.getModelFile() != null) {
             File modelFile = fileService.saveModel(request.getModelFile());
