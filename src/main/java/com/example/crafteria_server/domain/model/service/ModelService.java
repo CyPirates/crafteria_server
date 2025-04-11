@@ -22,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -130,11 +131,20 @@ public class ModelService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 구매한 모델입니다.");
         });
 
-        modelPurchaseRepository.save(ModelPurchase.builder().user(user).model(model).build());
+        String paymentId = UUID.randomUUID().toString(); // 🔥 결제 ID 생성
+
+        ModelPurchase savedPurchase = modelPurchaseRepository.save(
+                ModelPurchase.builder()
+                        .user(user)
+                        .model(model)
+                        .paymentId(paymentId)
+                        .build()
+        );
+
         model.setDownloadCount(model.getDownloadCount() + 1);
         modelRepository.save(model);
 
-        return UserModelDto.ModelResponse.from(model, false);
+        return UserModelDto.ModelResponse.from(savedPurchase); // 🔥 구매 내역 기준으로 응답
     }
 
     public List<UserModelDto.ModelResponse> getMyUploadedModelList(int page, Long userId) {
