@@ -71,6 +71,9 @@ public class UserModelDto {
         @Schema(description = "모델 카테고리")
         private ModelCategory category;
 
+        @Schema(description = "결제 ID", example = "a1b2c3d4-e5f6-7890-abcd-1234567890ef")
+        private String paymentId;
+
         public static ModelResponse from(Model model, boolean purchaseAvailability) {
             return ModelResponse.builder()
                     .id(model.getId())
@@ -104,6 +107,7 @@ public class UserModelDto {
                     .lengthSize(modelPurchase.getModel().getLengthSize())
                     .heightSize(modelPurchase.getModel().getHeightSize())
                     .modelFileUrl(modelPurchase.getModel().getModelFile().getUrl())
+                    .paymentId(modelPurchase.getPaymentId())
                     .build();
         }
     }

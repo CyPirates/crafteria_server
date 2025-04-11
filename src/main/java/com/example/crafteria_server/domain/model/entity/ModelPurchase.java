@@ -24,4 +24,7 @@ public class ModelPurchase extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "model_id", nullable = false)
     private Model model;
+
+    @Column(nullable = false, unique = true)
+    private String paymentId; // 결제 ID 추가
 }
