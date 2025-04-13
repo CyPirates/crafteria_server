@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ModelRepository extends JpaRepository<Model, Long> {
@@ -21,4 +22,11 @@ public interface ModelRepository extends JpaRepository<Model, Long> {
     List<Model> findByNameContaining(String name);
 
     List<Model> findByDescriptionContaining(String description);
+
+    @Query("SELECT m FROM Model m WHERE m.isDeleted = false ORDER BY m.viewCount DESC")
+    Page<Model> findAllByIsDeletedFalseOrderByViewCountDesc(Pageable pageable);
+
+    Page<Model> findAllByAuthorIdAndIsDeletedFalseOrderByCreateDateDesc(Long authorId, Pageable pageable);
+
+    Optional<Model> findByIdAndIsDeletedFalse(Long modelId);
 }

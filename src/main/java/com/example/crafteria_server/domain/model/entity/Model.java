@@ -60,4 +60,8 @@ public class Model extends BaseEntity {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private ModelCategory category;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean isDeleted = false; // 🔥 Soft Delete 필드 추가
 }
