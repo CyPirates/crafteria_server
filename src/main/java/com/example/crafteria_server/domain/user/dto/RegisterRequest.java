@@ -27,4 +27,10 @@ public class RegisterRequest {
 
     @Schema(description = "주소", example = "서울시 강남구")
     private String address;
+
+    @Schema(description = "제조사 이름", example = "삼성")
+    private String manufacturerName;
+
+    @Schema(description = "제조사 설명", example = "반도체를 만드는 회사이며, 전화번호는 010-1234-5678입니다.")
+    private String manufacturerDescription;
 }
