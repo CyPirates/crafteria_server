@@ -34,12 +34,10 @@ public class UserService implements UserDetailsService {
     private final TokenProvider tokenProvider;
 
     public void registerDashboardUser(RegisterRequest request) {
-        // 중복 아이디 확인
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("이미 존재하는 아이디입니다.");
         }
 
-        // PENDING 상태로 대시보드 계정 생성
         User newUser = User.builder()
                 .username(request.getUsername())
                 .realname(request.getRealname())
@@ -47,7 +45,9 @@ public class UserService implements UserDetailsService {
                 .address(request.getAddress())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.DASHBOARD)
-                .dashboardStatus(DashboardStatus.PENDING) // 기본값 대기 상태
+                .dashboardStatus(DashboardStatus.PENDING) // 일반 회원가입만 PENDING 설정
+                .manufacturerName(request.getManufacturerName())
+                .manufacturerDescription(request.getManufacturerDescription())
                 .build();
 
         userRepository.save(newUser);
@@ -70,7 +70,6 @@ public class UserService implements UserDetailsService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("유저를 찾을 수 없습니다."));
 
-        // 대시보드 유저는 APPROVED 상태만 허용
         if (user.getRole() == Role.DASHBOARD && user.getDashboardStatus() != DashboardStatus.APPROVED) {
             throw new UsernameNotFoundException("승인되지 않은 계정입니다.");
         }
@@ -82,32 +81,33 @@ public class UserService implements UserDetailsService {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("유저를 찾을 수 없습니다."));
 
-        // 비밀번호 검증
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BadCredentialsException("비밀번호가 일치하지 않습니다.");
         }
 
-        // Ban 상태 확인
         if (user.getBanUntil() != null && user.getBanUntil().isAfter(LocalDateTime.now())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "계정이 정지된 상태입니다. 정지 해제일: " + user.getBanUntil());
         }
 
-        // JWT 토큰 생성
+        if (user.getRole() == Role.DASHBOARD && user.getDashboardStatus() != DashboardStatus.APPROVED) {
+            throw new UsernameNotFoundException("승인되지 않은 계정입니다.");
+        }
+
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 new PrincipalDetails(user), null, new PrincipalDetails(user).getAuthorities());
         String accessToken = tokenProvider.generateAccessToken(authentication);
 
-        // 제조사 ID 가져오기 (있을 경우)
         String manufacturerId = Optional.ofNullable(user.getManufacturer())
-                .map(manufacturer -> manufacturer.getId().toString())
-                .map(Object::toString)
+                .filter(m -> user.getDashboardStatus() == DashboardStatus.APPROVED)
+                .map(m -> m.getId().toString())
+                .or(() -> Optional.ofNullable(user.getManufacturerName()))
                 .orElse("제조사 등록이 안됐습니다.");
 
         return LoginDto.LoginResponse.builder()
                 .username(user.getUsername())
                 .role(user.getRole().name())
                 .accessToken(accessToken)
-                .manufacturerId(manufacturerId) // 응답에 제조사 ID 추가
+                .manufacturerId(manufacturerId)
                 .build();
     }
 
@@ -117,7 +117,6 @@ public class UserService implements UserDetailsService {
 
         return Optional.ofNullable(user.getManufacturer())
                 .map(manufacturer -> manufacturer.getId().toString())
-                .map(Object::toString)
                 .orElse("대시보드 유저에게 매칭된 제조사가 없습니다.");
     }
 

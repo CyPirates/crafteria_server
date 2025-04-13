@@ -31,10 +31,9 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Column(nullable = true) // <== 이렇게 바꿔주세요
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private DashboardStatus dashboardStatus = DashboardStatus.PENDING; // 기본값: 대기 상태
+    private DashboardStatus dashboardStatus;
 
 
     @OneToOne(mappedBy = "dashboardUser", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
@@ -42,5 +41,11 @@ public class User extends BaseEntity {
 
     @Column(name = "ban_until")
     private LocalDateTime banUntil;
+
+    @Column(nullable = true)
+    private String manufacturerName;
+
+    @Column(nullable = true)
+    private String manufacturerDescription;
 
 }
