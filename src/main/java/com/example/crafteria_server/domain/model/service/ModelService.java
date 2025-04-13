@@ -38,32 +38,30 @@ public class ModelService {
 
     public List<UserModelDto.ModelResponse> getPopularList(int page, Optional<Long> userId) {
         Pageable pageable = PageRequest.of(page, 10);
-        List<Model> models = modelRepository.findAllOrderByViewCountDesc(pageable).getContent();
+        List<Model> models = modelRepository.findAllByIsDeletedFalseOrderByViewCountDesc(pageable).getContent();
 
         return models.stream()
                 .map(model -> {
                     boolean purchaseAvailability = userId
                             .map(uId -> !uId.equals(model.getAuthor().getId()) && !checkIfModelPurchased(uId, model.getId()))
-                            .orElse(true);  // 비로그인 유저는 모든 도면을 구매할 수 있다고 가정
+                            .orElse(true);
                     return UserModelDto.ModelResponse.from(model, purchaseAvailability);
                 })
                 .collect(Collectors.toList());
     }
 
     public UserModelDto.ModelResponse getModelDetail(Long modelId, Optional<Long> userId) {
-        Model model = modelRepository.findById(modelId).orElseThrow(() ->
+        Model model = modelRepository.findByIdAndIsDeletedFalse(modelId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
 
         boolean purchaseAvailability = userId
                 .map(uId -> !uId.equals(model.getAuthor().getId()) && !checkIfModelPurchased(uId, modelId))
-                .orElse(true);  // 비로그인 유저는 모든 도면을 구매할 수 있다고 가정
-
-        UserModelDto.ModelResponse response = UserModelDto.ModelResponse.from(model, purchaseAvailability);
+                .orElse(true);
 
         model.setViewCount(model.getViewCount() + 1);
         modelRepository.save(model);
 
-        return response;
+        return UserModelDto.ModelResponse.from(model, purchaseAvailability);
     }
 
     public UserModelDto.ModelResponse uploadModel(Long userId, UserModelDto.ModelUploadRequest request) {
@@ -149,7 +147,7 @@ public class ModelService {
 
     public List<UserModelDto.ModelResponse> getMyUploadedModelList(int page, Long userId) {
         Pageable pageable = PageRequest.of(page, 10);
-        List<Model> models = modelRepository.findAllByAuthorIdOrderByCreateDateDesc(userId, pageable).getContent();
+        List<Model> models = modelRepository.findAllByAuthorIdAndIsDeletedFalseOrderByCreateDateDesc(userId, pageable).getContent();
 
         return models.stream()
                 .map(model -> UserModelDto.ModelResponse.from(model, false))
@@ -188,14 +186,15 @@ public class ModelService {
 
     // 도면 삭제
     public void deleteModel(Long modelId, Long userId) {
-        Model model = modelRepository.findById(modelId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
+        Model model = modelRepository.findById(modelId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
 
-        // 유저가 도면의 작가인지 확인
         if (!model.getAuthor().getId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "이 도면을 삭제할 권한이 없습니다.");
         }
 
-        modelRepository.delete(model);
+        model.setDeleted(true);
+        modelRepository.save(model);
     }
 }
 
