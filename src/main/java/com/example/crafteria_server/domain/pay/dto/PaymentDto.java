@@ -35,4 +35,14 @@ public class PaymentDto {
         private String status;
         private BigDecimal amount;
     }
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ModelPaymentRequestDto {
+        private String paymentId;
+        private Long modelId;
+    }
 }
