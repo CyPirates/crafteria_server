@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/payment")
 public class PaymentController {
 
-    private PaymentService paymentService;
+    private final PaymentService paymentService;
 
     @PostMapping("/complete")    
     public JsonBody<PaymentDto.PaymentResultDto> completePayment(@RequestBody PaymentDto.PaymentRequestDto paymentRequest) {
