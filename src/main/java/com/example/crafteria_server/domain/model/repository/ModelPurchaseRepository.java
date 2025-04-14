@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface ModelPurchaseRepository extends JpaRepository<ModelPurchase, Long> {
     Page<ModelPurchase> findAllByUserIdOrderByCreateDateDesc(Long userId, Pageable pageable);
     Optional<ModelPurchase> findByUserIdAndModelId(Long userId, Long modelId);
+    boolean existsByPaymentId(String paymentId);
 }
