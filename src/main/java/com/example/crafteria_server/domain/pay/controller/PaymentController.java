@@ -21,26 +21,24 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
-    @PostMapping("/complete")    
-    public JsonBody<PaymentDto.PaymentResultDto> completePayment(@RequestBody PaymentDto.PaymentRequestDto paymentRequest) {
+    @PostMapping("/complete")
+    public JsonBody<PaymentDto.PaymentResultDto> completeOrderPayment(@RequestBody PaymentDto.PaymentRequestDto request) {
         try {
-            PaymentDto.PaymentResultDto paymentResult = paymentService.processPayment(paymentRequest.getPaymentId(), paymentRequest.getOrder());
-            return JsonBody.of(200, "성공", paymentResult);
+            var result = paymentService.processPayment(request.getPaymentId(), request.getOrderId());
+            return JsonBody.of(200, "성공", result);
         } catch (Exception e) {
             return JsonBody.of(400, "실패: " + e.getMessage(), null);
         }
     }
 
     @PostMapping("/model/complete")
-    public JsonBody<PaymentDto.PaymentResultDto> completeModelPayment(@RequestBody PaymentDto.ModelPaymentRequestDto paymentRequest,
-                                                                      @AuthenticationPrincipal PrincipalDetails principalDetails) {
+    public JsonBody<PaymentDto.PaymentResultDto> completeModelPayment(
+            @RequestBody PaymentDto.ModelPaymentRequestDto request,
+            @AuthenticationPrincipal PrincipalDetails principalDetails) {
         try {
-            PaymentDto.PaymentResultDto paymentResult = paymentService.processModelPayment(
-                    paymentRequest.getPaymentId(),
-                    paymentRequest.getModelId(),
-                    principalDetails.getUser().getId()
-            );
-            return JsonBody.of(200, "성공", paymentResult);
+            var result = paymentService.processModelPayment(
+                    request.getPaymentId(), request.getModelId(), principalDetails.getUser().getId());
+            return JsonBody.of(200, "성공", result);
         } catch (Exception e) {
             return JsonBody.of(400, "실패: " + e.getMessage(), null);
         }
