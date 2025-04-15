@@ -12,7 +12,7 @@ public class PaymentDto {
     @AllArgsConstructor
     public static class PaymentRequestDto {
         private String paymentId;
-        private Long order;
+        private Long orderId;
 
     }
 
@@ -33,7 +33,16 @@ public class PaymentDto {
     @AllArgsConstructor
     public static class PaymentResponse {
         private String status;
-        private BigDecimal amount;
+        private Amount amount;
+        private String paymentMethod;
+
+        @Getter
+        @Setter
+        @NoArgsConstructor
+        @AllArgsConstructor
+        public static class Amount {
+            private BigDecimal total;
+        }
     }
 
     @Getter
@@ -44,5 +53,16 @@ public class PaymentDto {
     public static class ModelPaymentRequestDto {
         private String paymentId;
         private Long modelId;
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PortOneResponseWrapper {
+        private int code;
+        private String message;
+        private PaymentResponse response;
     }
 }

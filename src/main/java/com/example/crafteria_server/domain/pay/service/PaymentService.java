@@ -22,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
@@ -32,43 +33,28 @@ import java.nio.charset.StandardCharsets;
 @RequiredArgsConstructor
 public class PaymentService {
 
-    @Autowired
-    private OrderRepository orderRepository;
-    @Autowired
-    private RestTemplate restTemplate;
-
-    private final ModelPurchaseRepository modelPurchaseRepository;
+    private final OrderRepository orderRepository;
     private final ModelRepository modelRepository;
+    private final ModelPurchaseRepository modelPurchaseRepository;
     private final UserRepository userRepository;
+    private final RestTemplate restTemplate;
 
     @Value("${portone_api_secret}")
     private String portoneApiSecret;
 
+    // 주문 결제 검증
     public PaymentDto.PaymentResultDto processPayment(String paymentId, Long orderId) throws Exception {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "PortOne " + portoneApiSecret);
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-
-        ResponseEntity<PaymentDto.PaymentResponse> response = restTemplate.exchange(
-                "https://api.portone.io/payments/" + URLEncoder.encode(paymentId, StandardCharsets.UTF_8),
-                HttpMethod.GET, entity, PaymentDto.PaymentResponse.class);
-
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new Exception("결제 정보 검색에 실패하였습니다.");
-        }
-
-        PaymentDto.PaymentResponse payment = response.getBody();
-        if (payment == null || !payment.getAmount().equals(order.getPurchasePrice())) {
+        PaymentDto.PaymentResponse payment = getPaymentFromPortOne(paymentId);
+        if (!payment.getAmount().getTotal().equals(BigDecimal.valueOf(order.getPurchasePrice()))) {
             throw new Exception("결제 금액이 주문 금액과 일치하지 않습니다.");
         }
 
-        // 결제 상태에 따른 주문 상태 업데이트
         switch (payment.getStatus()) {
             case "VIRTUAL_ACCOUNT_ISSUED":
-                order.setStatus(OrderStatus.IN_PRODUCTING); // 예시로 IN_PRODUCTING 설정, 실제 상황에 맞게 조정 필요
+                order.setStatus(OrderStatus.IN_PRODUCTING);
                 break;
             case "PAID":
                 order.setStatus(OrderStatus.PAID);
@@ -77,48 +63,62 @@ public class PaymentService {
                 throw new Exception("처리되지 않은 결제 상태: " + payment.getStatus());
         }
 
-        orderRepository.save(order);  // 상태 변경 후 저장
+        orderRepository.save(order);
         return new PaymentDto.PaymentResultDto(payment.getStatus(), "결제가 성공적으로 처리되었습니다.");
     }
 
+    // 모델 결제 검증
     public PaymentDto.PaymentResultDto processModelPayment(String paymentId, Long modelId, Long userId) throws Exception {
-        // 중복 결제 방지
         if (modelPurchaseRepository.existsByPaymentId(paymentId)) {
             throw new Exception("이미 처리된 결제입니다.");
         }
 
         Model model = modelRepository.findById(modelId)
-                .orElseThrow(() -> new RuntimeException("도면을 찾을 수 없습니다."));
+                .orElseThrow(() -> new RuntimeException("모델을 찾을 수 없습니다."));
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
 
+        PaymentDto.PaymentResponse payment = getPaymentFromPortOne(paymentId);
+        if (!payment.getAmount().getTotal().equals(BigDecimal.valueOf(model.getPrice()))) {
+            throw new Exception("결제 금액이 모델 가격과 일치하지 않습니다.");
+        }
+
+        ModelPurchase purchase = ModelPurchase.builder()
+                .model(model)
+                .user(user)
+                .paymentId(paymentId)
+                .build();
+        modelPurchaseRepository.save(purchase);
+
+        return new PaymentDto.PaymentResultDto(payment.getStatus(), "모델 결제가 성공적으로 처리되었습니다.");
+    }
+
+    // 포트원 API 호출 및 유효성 검증
+    private PaymentDto.PaymentResponse getPaymentFromPortOne(String paymentId) throws Exception {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "PortOne " + portoneApiSecret);
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<PaymentDto.PaymentResponse> response = restTemplate.exchange(
+        ResponseEntity<PaymentDto.PortOneResponseWrapper> response = restTemplate.exchange(
                 "https://api.portone.io/payments/" + URLEncoder.encode(paymentId, StandardCharsets.UTF_8),
-                HttpMethod.GET, entity, PaymentDto.PaymentResponse.class);
+                HttpMethod.GET, entity, PaymentDto.PortOneResponseWrapper.class
+        );
 
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new Exception("결제 정보 조회에 실패했습니다.");
+        PaymentDto.PortOneResponseWrapper body = response.getBody();
+        if (body == null) {
+            throw new Exception("PortOne 응답이 비어 있습니다.");
         }
 
-        PaymentDto.PaymentResponse payment = response.getBody();
-        if (payment == null || payment.getAmount().longValue() != model.getPrice()) {
-            throw new Exception("결제 금액이 도면 가격과 일치하지 않습니다.");
+        if (body.getCode() != 0) {
+            throw new Exception("PortOne 응답 에러: " + body.getMessage());
         }
 
-        // 저장
-        ModelPurchase modelPurchase = ModelPurchase.builder()
-                .user(user)
-                .model(model)
-                .paymentId(paymentId)
-                .build();
-        modelPurchaseRepository.save(modelPurchase);
+        if (body.getResponse() == null || body.getResponse().getAmount() == null) {
+            throw new Exception("PortOne 응답에서 결제 정보가 누락되었습니다.");
+        }
 
-        return new PaymentDto.PaymentResultDto(payment.getStatus(), "도면 결제가 성공적으로 처리되었습니다.");
+        return body.getResponse();
     }
 }
 
