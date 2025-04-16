@@ -94,31 +94,31 @@ public class PaymentService {
         return new PaymentDto.PaymentResultDto(payment.getStatus(), "모델 결제가 성공적으로 처리되었습니다.");
     }
 
-    // 포트원 API 호출 및 유효성 검증
     private PaymentDto.PaymentResponse getPaymentFromPortOne(String paymentId) throws Exception {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "PortOne " + portoneApiSecret);
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<PaymentDto.PortOneResponseWrapper> response = restTemplate.exchange(
+        // 1. 원시 JSON 로그 출력 (유지)
+        ResponseEntity<String> raw = restTemplate.exchange(
                 "https://api.portone.io/payments/" + URLEncoder.encode(paymentId, StandardCharsets.UTF_8),
-                HttpMethod.GET, entity, PaymentDto.PortOneResponseWrapper.class
+                HttpMethod.GET, entity, String.class
+        );
+        log.warn("📦 PortOne 응답 원문: {}", raw.getBody());
+
+        // 2. DTO 직접 매핑 (중간에 response 필드 없음)
+        ResponseEntity<PaymentDto.PaymentResponse> response = restTemplate.exchange(
+                "https://api.portone.io/payments/" + URLEncoder.encode(paymentId, StandardCharsets.UTF_8),
+                HttpMethod.GET, entity, PaymentDto.PaymentResponse.class
         );
 
-        PaymentDto.PortOneResponseWrapper body = response.getBody();
-        if (body == null) {
-            throw new Exception("PortOne 응답이 비어 있습니다.");
-        }
-
-        if (body.getCode() != 0) {
-            throw new Exception("PortOne 응답 에러: " + body.getMessage());
-        }
-
-        if (body.getResponse() == null || body.getResponse().getAmount() == null) {
+        PaymentDto.PaymentResponse payment = response.getBody();
+        if (payment == null || payment.getAmount() == null) {
+            log.warn("❗ PortOne 응답에서 결제 정보가 없습니다: {}", response);
             throw new Exception("PortOne 응답에서 결제 정보가 누락되었습니다.");
         }
 
-        return body.getResponse();
+        return payment;
     }
 }
 
