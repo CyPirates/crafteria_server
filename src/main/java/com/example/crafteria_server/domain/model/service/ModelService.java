@@ -108,12 +108,16 @@ public class ModelService {
 
     public List<UserModelDto.ModelResponse> getMyDownloadedModelList(int page, Long userId) {
         Pageable pageable = PageRequest.of(page, 10);
-        List<ModelPurchase> purchases = modelPurchaseRepository.findAllByUserIdOrderByCreateDateDesc(userId, pageable).getContent();
+
+        List<ModelPurchase> purchases = modelPurchaseRepository
+                .findAllByUserIdAndVerifiedTrueOrderByCreateDateDesc(userId, pageable)
+                .getContent();
 
         return purchases.stream()
                 .map(purchase -> UserModelDto.ModelResponse.from(purchase.getModel(), false))
                 .collect(Collectors.toList());
     }
+
 
     public UserModelDto.ModelResponse purchaseModel(Long userId, Long modelId) {
         User user = userRepository.findById(userId).orElseThrow(() ->

@@ -89,6 +89,7 @@ public class PaymentService {
                 .user(user)
                 .paymentId(paymentId)
                 .build();
+        purchase.setVerified(true);
         modelPurchaseRepository.save(purchase);
 
         return new PaymentDto.PaymentResultDto(payment.getStatus(), "모델 결제가 성공적으로 처리되었습니다.");
