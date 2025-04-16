@@ -25,6 +25,7 @@ import org.springframework.web.client.RestTemplate;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 
 @Service
@@ -69,29 +70,44 @@ public class PaymentService {
 
     // 모델 결제 검증
     public PaymentDto.PaymentResultDto processModelPayment(String paymentId, Long modelId, Long userId) throws Exception {
-        if (modelPurchaseRepository.existsByPaymentId(paymentId)) {
-            throw new Exception("이미 처리된 결제입니다.");
-        }
+        PaymentDto.PaymentResponse payment = getPaymentFromPortOne(paymentId); // ✅ 포트원 API로 결제 내역 조회
 
+        // 유효하지 않은 결제 ID이면 여기서 Exception 발생
+
+        // 모델 가격 확인
         Model model = modelRepository.findById(modelId)
                 .orElseThrow(() -> new RuntimeException("모델을 찾을 수 없습니다."));
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
-
-        PaymentDto.PaymentResponse payment = getPaymentFromPortOne(paymentId);
         if (!payment.getAmount().getTotal().equals(BigDecimal.valueOf(model.getPrice()))) {
             throw new Exception("결제 금액이 모델 가격과 일치하지 않습니다.");
         }
 
-        ModelPurchase purchase = ModelPurchase.builder()
-                .model(model)
-                .user(user)
-                .paymentId(paymentId)
-                .build();
-        purchase.setVerified(true);
-        modelPurchaseRepository.save(purchase);
+        Optional<ModelPurchase> existingPurchaseOpt = modelPurchaseRepository.findByPaymentId(paymentId);
+        if (existingPurchaseOpt.isPresent()) {
+            ModelPurchase existingPurchase = existingPurchaseOpt.get();
+            if (existingPurchase.isVerified()) {
+                throw new Exception("이미 검증 완료된 결제입니다.");
+            }
 
+            // ✅ 검증 성공한 경우에만 verified true로 변경
+            existingPurchase.setVerified(true);
+            modelPurchaseRepository.save(existingPurchase);
+
+            return new PaymentDto.PaymentResultDto("VERIFIED", "기존 결제 검증 완료 처리되었습니다.");
+        }
+
+        // 없는 결제건이면 새로 생성
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+
+        ModelPurchase purchase = ModelPurchase.builder()
+                .user(user)
+                .model(model)
+                .paymentId(paymentId)
+                .verified(true)
+                .build();
+
+        modelPurchaseRepository.save(purchase);
         return new PaymentDto.PaymentResultDto(payment.getStatus(), "모델 결제가 성공적으로 처리되었습니다.");
     }
 

@@ -15,4 +15,8 @@ public interface ModelPurchaseRepository extends JpaRepository<ModelPurchase, Lo
     Optional<ModelPurchase> findByUserIdAndModelId(Long userId, Long modelId);
     boolean existsByPaymentId(String paymentId);
     Page<ModelPurchase> findAllByUserIdAndVerifiedTrueOrderByCreateDateDesc(Long userId, Pageable pageable);
+
+    Optional<ModelPurchase> findByPaymentId(String paymentId);
+
+    Optional<Object> findByUserIdAndModelIdAndVerifiedTrue(Long userId, Long modelId);
 }

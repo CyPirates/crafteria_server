@@ -14,6 +14,7 @@ import com.example.crafteria_server.domain.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -69,16 +70,14 @@ public class ModelService {
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
         log.info("userid: {}", user.getId());
 
-        Author author = authorRepository.findById(user.getId()).orElseGet(() -> {
-            return Author.builder()
-                    .user(user)
-                    .id(user.getId())
-                    .realname(user.getRealname())  // User의 realname을 Author의 realname에 복사
-                    .rating(5)
-                    .modelCount(0)
-                    .viewCount(0)
-                    .build();
-        });
+        Author author = authorRepository.findById(user.getId()).orElseGet(() -> Author.builder()
+                .user(user)
+                .id(user.getId())
+                .realname(user.getRealname())
+                .rating(5)
+                .modelCount(0)
+                .viewCount(0)
+                .build());
 
         if (author.getRealname() == null) {
             author.setRealname(user.getRealname());
@@ -103,21 +102,18 @@ public class ModelService {
                 .build();
 
         modelRepository.save(newModel);
-        return UserModelDto.ModelResponse.from(newModel, false);  // 업로드한 도면은 구매 불가능
+        return UserModelDto.ModelResponse.from(newModel, false);
     }
 
     public List<UserModelDto.ModelResponse> getMyDownloadedModelList(int page, Long userId) {
         Pageable pageable = PageRequest.of(page, 10);
-
-        List<ModelPurchase> purchases = modelPurchaseRepository
-                .findAllByUserIdAndVerifiedTrueOrderByCreateDateDesc(userId, pageable)
-                .getContent();
+        Page<ModelPurchase> purchases = modelPurchaseRepository
+                .findAllByUserIdAndVerifiedTrueOrderByCreateDateDesc(userId, pageable);
 
         return purchases.stream()
                 .map(purchase -> UserModelDto.ModelResponse.from(purchase.getModel(), false))
                 .collect(Collectors.toList());
     }
-
 
     public UserModelDto.ModelResponse purchaseModel(Long userId, Long modelId) {
         User user = userRepository.findById(userId).orElseThrow(() ->
@@ -129,24 +125,25 @@ public class ModelService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "자신이 판매중인 도면은 구매할 수 없습니다.");
         }
 
-        modelPurchaseRepository.findByUserIdAndModelId(userId, modelId).ifPresent(modelPurchase -> {
+        modelPurchaseRepository.findByUserIdAndModelIdAndVerifiedTrue(userId, modelId).ifPresent(modelPurchase -> {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 구매한 모델입니다.");
         });
 
-        String paymentId = UUID.randomUUID().toString(); // 🔥 결제 ID 생성
+        String paymentId = UUID.randomUUID().toString();
 
         ModelPurchase savedPurchase = modelPurchaseRepository.save(
                 ModelPurchase.builder()
                         .user(user)
                         .model(model)
                         .paymentId(paymentId)
+                        .verified(false)
                         .build()
         );
 
         model.setDownloadCount(model.getDownloadCount() + 1);
         modelRepository.save(model);
 
-        return UserModelDto.ModelResponse.from(savedPurchase); // 🔥 구매 내역 기준으로 응답
+        return UserModelDto.ModelResponse.from(savedPurchase);
     }
 
     public List<UserModelDto.ModelResponse> getMyUploadedModelList(int page, Long userId) {
@@ -159,10 +156,9 @@ public class ModelService {
     }
 
     private boolean checkIfModelPurchased(Long userId, Long modelId) {
-        return modelPurchaseRepository.findByUserIdAndModelId(userId, modelId).isPresent();
+        return modelPurchaseRepository.findByUserIdAndModelIdAndVerifiedTrue(userId, modelId).isPresent();
     }
 
-    // 도면 수정
     public UserModelDto.ModelResponse updateModel(Long modelId, Long userId, UserModelDto.ModelUploadRequest request) {
         Model model = modelRepository.findById(modelId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
@@ -185,10 +181,9 @@ public class ModelService {
         }
 
         modelRepository.save(model);
-        return UserModelDto.ModelResponse.from(model, false);  // 업데이트한 도면은 구매 불가능
+        return UserModelDto.ModelResponse.from(model, false);
     }
 
-    // 도면 삭제
     public void deleteModel(Long modelId, Long userId) {
         Model model = modelRepository.findById(modelId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
