@@ -46,7 +46,7 @@ public class ModelService {
                     boolean purchaseAvailability = userId
                             .map(uId -> !uId.equals(model.getAuthor().getId()) && !checkIfModelPurchased(uId, model.getId()))
                             .orElse(true);
-                    return UserModelDto.ModelResponse.from(model, purchaseAvailability);
+                    return UserModelDto.ModelResponse.from(model, purchaseAvailability, model.isDownloadable());
                 })
                 .collect(Collectors.toList());
     }
@@ -62,7 +62,7 @@ public class ModelService {
         model.setViewCount(model.getViewCount() + 1);
         modelRepository.save(model);
 
-        return UserModelDto.ModelResponse.from(model, purchaseAvailability);
+        return UserModelDto.ModelResponse.from(model, purchaseAvailability, model.isDownloadable());
     }
 
     public UserModelDto.ModelResponse uploadModel(Long userId, UserModelDto.ModelUploadRequest request) {
@@ -99,10 +99,11 @@ public class ModelService {
                 .heightSize(request.getHeightSize())
                 .category(request.getCategory())
                 .modelFile(modelFile)
+                .isDownloadable(request.isDownloadable())
                 .build();
 
         modelRepository.save(newModel);
-        return UserModelDto.ModelResponse.from(newModel, false);
+        return UserModelDto.ModelResponse.from(newModel, false, newModel.isDownloadable());
     }
 
     public List<UserModelDto.ModelResponse> getMyDownloadedModelList(int page, Long userId) {
@@ -111,7 +112,11 @@ public class ModelService {
                 .findAllByUserIdAndVerifiedTrueOrderByCreateDateDesc(userId, pageable);
 
         return purchases.stream()
-                .map(purchase -> UserModelDto.ModelResponse.from(purchase.getModel(), false))
+                .map(purchase -> {
+                    Model model = purchase.getModel();
+                    boolean downloadable = model.isDownloadable();
+                    return UserModelDto.ModelResponse.from(model, false, downloadable);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -129,21 +134,30 @@ public class ModelService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 구매한 모델입니다.");
         });
 
-        String paymentId = UUID.randomUUID().toString();
-
-        ModelPurchase savedPurchase = modelPurchaseRepository.save(
-                ModelPurchase.builder()
-                        .user(user)
-                        .model(model)
-                        .paymentId(paymentId)
-                        .verified(false)
-                        .build()
-        );
+        if (model.getPrice() == 0) {
+            ModelPurchase freePurchase = ModelPurchase.builder()
+                    .user(user)
+                    .model(model)
+                    .paymentId(null)
+                    .verified(true)
+                    .build();
+            modelPurchaseRepository.save(freePurchase);
+        } else {
+            String paymentId = UUID.randomUUID().toString();
+            ModelPurchase savedPurchase = modelPurchaseRepository.save(
+                    ModelPurchase.builder()
+                            .user(user)
+                            .model(model)
+                            .paymentId(paymentId)
+                            .verified(false)
+                            .build()
+            );
+        }
 
         model.setDownloadCount(model.getDownloadCount() + 1);
         modelRepository.save(model);
 
-        return UserModelDto.ModelResponse.from(savedPurchase);
+        return UserModelDto.ModelResponse.from(model, false, model.isDownloadable());
     }
 
     public List<UserModelDto.ModelResponse> getMyUploadedModelList(int page, Long userId) {
@@ -151,7 +165,7 @@ public class ModelService {
         List<Model> models = modelRepository.findAllByAuthorIdAndIsDeletedFalseOrderByCreateDateDesc(userId, pageable).getContent();
 
         return models.stream()
-                .map(model -> UserModelDto.ModelResponse.from(model, false))
+                .map(model -> UserModelDto.ModelResponse.from(model, false, model.isDownloadable()))
                 .collect(Collectors.toList());
     }
 
@@ -174,6 +188,7 @@ public class ModelService {
         model.setLengthSize(request.getLengthSize());
         model.setHeightSize(request.getHeightSize());
         model.setCategory(request.getCategory());
+        model.setDownloadable(request.isDownloadable());
 
         if (request.getModelFile() != null) {
             File modelFile = fileService.saveModel(request.getModelFile());
@@ -181,7 +196,7 @@ public class ModelService {
         }
 
         modelRepository.save(model);
-        return UserModelDto.ModelResponse.from(model, false);
+        return UserModelDto.ModelResponse.from(model, false, model.isDownloadable());
     }
 
     public void deleteModel(Long modelId, Long userId) {
