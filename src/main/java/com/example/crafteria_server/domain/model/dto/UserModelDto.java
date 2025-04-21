@@ -99,7 +99,7 @@ public class UserModelDto {
                     .build();
         }
 
-        public static ModelResponse from(ModelPurchase modelPurchase) {
+        public static ModelResponse from(ModelPurchase modelPurchase, boolean purchaseAvailability) {
             Model model = modelPurchase.getModel();
             return ModelResponse.builder()
                     .id(modelPurchase.getModel().getId())

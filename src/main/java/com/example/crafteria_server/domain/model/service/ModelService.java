@@ -130,34 +130,36 @@ public class ModelService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "자신이 판매중인 도면은 구매할 수 없습니다.");
         }
 
-        modelPurchaseRepository.findByUserIdAndModelIdAndVerifiedTrue(userId, modelId).ifPresent(modelPurchase -> {
+        modelPurchaseRepository.findByUserIdAndModelIdAndVerifiedTrue(userId, modelId).ifPresent(p -> {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 구매한 모델입니다.");
         });
 
+        ModelPurchase purchase;
+
         if (model.getPrice() == 0) {
-            ModelPurchase freePurchase = ModelPurchase.builder()
+            // 무료 구매 시 paymentId 없이 verified = true 로 저장
+            purchase = ModelPurchase.builder()
                     .user(user)
                     .model(model)
-                    .paymentId(null)
                     .verified(true)
                     .build();
-            modelPurchaseRepository.save(freePurchase);
         } else {
+            // 유료 구매 시 paymentId 생성하고 verified = false 로 저장
             String paymentId = UUID.randomUUID().toString();
-            ModelPurchase savedPurchase = modelPurchaseRepository.save(
-                    ModelPurchase.builder()
-                            .user(user)
-                            .model(model)
-                            .paymentId(paymentId)
-                            .verified(false)
-                            .build()
-            );
+            purchase = ModelPurchase.builder()
+                    .user(user)
+                    .model(model)
+                    .paymentId(paymentId)
+                    .verified(false)
+                    .build();
         }
+
+        ModelPurchase savedPurchase = modelPurchaseRepository.save(purchase);
 
         model.setDownloadCount(model.getDownloadCount() + 1);
         modelRepository.save(model);
 
-        return UserModelDto.ModelResponse.from(model, false, model.isDownloadable());
+        return UserModelDto.ModelResponse.from(savedPurchase, model.isDownloadable());
     }
 
     public List<UserModelDto.ModelResponse> getMyUploadedModelList(int page, Long userId) {

@@ -22,7 +22,7 @@ public class ModelPurchase extends BaseEntity {
     @JoinColumn(name = "model_id", nullable = false)
     private Model model;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = true, unique = true)
     private String paymentId; // 결제 ID 추가
 
     @Column(nullable = false)
