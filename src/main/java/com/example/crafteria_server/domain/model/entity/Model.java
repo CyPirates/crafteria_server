@@ -64,4 +64,8 @@ public class Model extends BaseEntity {
     @Column(nullable = false)
     @Builder.Default
     private boolean isDeleted = false; // 🔥 Soft Delete 필드 추가
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean isDownloadable = true;
 }

@@ -74,7 +74,12 @@ public class UserModelDto {
         @Schema(description = "결제 ID", example = "a1b2c3d4-e5f6-7890-abcd-1234567890ef")
         private String paymentId;
 
-        public static ModelResponse from(Model model, boolean purchaseAvailability) {
+        @NotNull
+        @Schema(description = "도면 다운로드 가능 여부", example = "true")
+        private boolean downloadable;
+
+
+        public static ModelResponse from(Model model, boolean purchaseAvailability, boolean downloadable) {
             return ModelResponse.builder()
                     .id(model.getId())
                     .author(AuthorDto.AuthorResponse.from(model.getAuthor()))
@@ -90,10 +95,12 @@ public class UserModelDto {
                     .category(model.getCategory())
                     .purchaseAvailability(purchaseAvailability)
                     .modelFileUrl(model.getModelFile().getUrl())
+                    .downloadable(downloadable)
                     .build();
         }
 
         public static ModelResponse from(ModelPurchase modelPurchase) {
+            Model model = modelPurchase.getModel();
             return ModelResponse.builder()
                     .id(modelPurchase.getModel().getId())
                     .author(AuthorDto.AuthorResponse.from(modelPurchase.getModel().getAuthor()))
@@ -108,6 +115,7 @@ public class UserModelDto {
                     .heightSize(modelPurchase.getModel().getHeightSize())
                     .modelFileUrl(modelPurchase.getModel().getModelFile().getUrl())
                     .paymentId(modelPurchase.getPaymentId())
+                    .downloadable(model.isDownloadable())
                     .build();
         }
     }
@@ -149,5 +157,8 @@ public class UserModelDto {
         @NotNull
         @Schema(description = "모델 카테고리")
         private ModelCategory category;
+
+        @Schema(description = "도면 다운로드 가능 여부", example = "true")
+        private boolean downloadable;
     }
 }
