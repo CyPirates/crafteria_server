@@ -16,6 +16,7 @@ import com.example.crafteria_server.domain.technology.entity.Technology;
 import com.example.crafteria_server.domain.technology.repository.TechnologyRepository;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.domain.user.repository.UserRepository;
+import com.example.crafteria_server.domain.user.service.UserService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,7 @@ public class OrderService {
     private final FileService fileService;
     private final ManufacturerRepository manufacturerRepository;  // 추가
     private final TechnologyRepository technologyRepository;  // 추가
+    private final UserService userService;
 
     public List<OrderDto.OrderResponse> getMyOrderList(Long userId, int page) {
         PageRequest pageable = PageRequest.of(page, 10);
@@ -100,8 +102,21 @@ public class OrderService {
             orderItems.add(orderItem);
         }
 
+        // 구매자
+        user.setTotalPurchaseCount(user.getTotalPurchaseCount() + 1);
+        user.setTotalPurchaseAmount(user.getTotalPurchaseAmount() + order.getPurchasePrice());
+        userService.updateUserLevel(user);
+        userRepository.save(user);
+
+// 판매자
+        User seller = manufacturer.getDashboardUser();
+        seller.setTotalPrintedCount(seller.getTotalPrintedCount() + 1);
+        seller.setTotalPrintedAmount(seller.getTotalPrintedAmount() + order.getPurchasePrice());
+        userService.updateUserLevel(seller);
+        userRepository.save(seller);
         order.setOrderItems(orderItems);
         orderRepository.save(order);
+
         return OrderDto.OrderResponse.from(order);
     }
 
