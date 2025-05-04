@@ -31,7 +31,7 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @Column(nullable = true) // <== 이렇게 바꿔주세요
+    @Column(nullable = true)
     @Enumerated(EnumType.STRING)
     private DashboardStatus dashboardStatus;
 
@@ -47,5 +47,37 @@ public class User extends BaseEntity {
 
     @Column(nullable = true)
     private String manufacturerDescription;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int totalPurchaseCount = 0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private long totalPurchaseAmount = 0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int totalUploadCount = 0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int totalSalesCount = 0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private long totalSalesAmount = 0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int totalPrintedCount = 0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private long totalPrintedAmount = 0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int level = 0;
 
 }

@@ -11,6 +11,7 @@ import com.example.crafteria_server.domain.user.entity.Author;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.domain.user.repository.AuthorRepository;
 import com.example.crafteria_server.domain.user.repository.UserRepository;
+import com.example.crafteria_server.domain.user.service.UserService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class ModelService {
     private final AuthorRepository authorRepository;
     private final ModelPurchaseRepository modelPurchaseRepository;
     private final FileService fileService;
+    private final UserService userService;
 
     public List<UserModelDto.ModelResponse> getPopularList(int page, Optional<Long> userId) {
         Pageable pageable = PageRequest.of(page, 10);
@@ -78,6 +80,10 @@ public class ModelService {
                 .modelCount(0)
                 .viewCount(0)
                 .build());
+
+        user.setTotalUploadCount(user.getTotalUploadCount() + 1);
+        userService.updateUserLevel(user);
+        userRepository.save(user);
 
         if (author.getRealname() == null) {
             author.setRealname(user.getRealname());
@@ -136,6 +142,8 @@ public class ModelService {
 
         ModelPurchase purchase;
 
+
+
         if (model.getPrice() == 0) {
             // 무료 구매 시 paymentId 없이 verified = true 로 저장
             purchase = ModelPurchase.builder()
@@ -158,6 +166,17 @@ public class ModelService {
 
         model.setDownloadCount(model.getDownloadCount() + 1);
         modelRepository.save(model);
+
+        user.setTotalPurchaseCount(user.getTotalPurchaseCount() + 1);
+        user.setTotalPurchaseAmount(user.getTotalPurchaseAmount() + model.getPrice());
+        userService.updateUserLevel(user);
+        userRepository.save(user);
+
+        User seller = model.getAuthor().getUser();
+        seller.setTotalSalesCount(seller.getTotalSalesCount() + 1);
+        seller.setTotalSalesAmount(seller.getTotalSalesAmount() + model.getPrice());
+        userService.updateUserLevel(seller);
+        userRepository.save(seller);
 
         return UserModelDto.ModelResponse.from(savedPurchase, model.isDownloadable());
     }
