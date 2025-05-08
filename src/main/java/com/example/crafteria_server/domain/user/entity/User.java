@@ -78,6 +78,10 @@ public class User extends BaseEntity {
 
     @Column(nullable = false)
     @Builder.Default
-    private int level = 0;
+    private int userLevel = 0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int sellerLevel = 0;
 
 }

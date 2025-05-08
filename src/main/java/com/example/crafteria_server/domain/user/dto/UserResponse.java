@@ -51,7 +51,10 @@ public class UserResponse {
     private long totalPrintedAmount;
 
     @Schema(description = "유저 레벨 (1~5)", example = "3")
-    private int level;
+    private int userLevel;
+
+    @Schema(description = "판매자 레벨(1~5)", example = "4")
+    private int sellerLevel;
 
     public static UserResponse from(User user) {
         return UserResponse.builder()
@@ -68,7 +71,8 @@ public class UserResponse {
                 .totalSalesAmount(user.getTotalSalesAmount())
                 .totalPrintedCount(user.getTotalPrintedCount())
                 .totalPrintedAmount(user.getTotalPrintedAmount())
-                .level(user.getLevel())
+                .userLevel(user.getUserLevel())
+                .sellerLevel(user.getSellerLevel())
                 .build();
     }
 }
