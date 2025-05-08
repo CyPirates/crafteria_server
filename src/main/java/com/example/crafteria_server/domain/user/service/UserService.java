@@ -143,33 +143,37 @@ public class UserService implements UserDetailsService {
     }
 
     public void updateUserLevel(User user) {
-        int level = 0;
-        if (user.getTotalPurchaseAmount() >= 10000 ||
-                user.getTotalSalesAmount() >= 100000 ||
-                user.getTotalPrintedAmount() >= 5000 ||
-                user.getTotalUploadCount() >= 100) {
-            level = 5;
-        } else if (user.getTotalPurchaseAmount() >= 5000 ||
-                user.getTotalSalesAmount() >= 50000 ||
-                user.getTotalPrintedAmount() >= 2500 ||
-                user.getTotalUploadCount() >= 50) {
-            level = 4;
-        } else if (user.getTotalPurchaseAmount() >= 2500 ||
-                user.getTotalSalesAmount() >= 25000 ||
-                user.getTotalPrintedAmount() >= 1250 ||
-                user.getTotalUploadCount() >= 25) {
-            level = 3;
-        } else if (user.getTotalPurchaseAmount() >= 1250 ||
-                user.getTotalSalesAmount() >= 12500 ||
-                user.getTotalPrintedAmount() >= 625 ||
-                user.getTotalUploadCount() >= 10) {
-            level = 2;
-        } else if (user.getTotalPurchaseAmount() >= 1 ||
-                user.getTotalSalesAmount() >= 1 ||
-                user.getTotalPrintedAmount() >= 1 ||
-                user.getTotalUploadCount() >= 1) {
-            level = 1;
+        int userLevel = 0;
+        int sellerLevel = 0;
+
+        // 일반 사용자 레벨 기준
+        if (user.getTotalPurchaseAmount() >= 10000 || user.getTotalPrintedAmount() >= 5000) {
+            userLevel = 5;
+        } else if (user.getTotalPurchaseAmount() >= 5000 || user.getTotalPrintedAmount() >= 2500) {
+            userLevel = 4;
+        } else if (user.getTotalPurchaseAmount() >= 2500 || user.getTotalPrintedAmount() >= 1250) {
+            userLevel = 3;
+        } else if (user.getTotalPurchaseAmount() >= 1250 || user.getTotalPrintedAmount() >= 625) {
+            userLevel = 2;
+        } else if (user.getTotalPurchaseAmount() >= 1 || user.getTotalPrintedAmount() >= 1) {
+            userLevel = 1;
         }
-        user.setLevel(level);
+
+        // 판매자 레벨 기준
+        if (user.getTotalSalesAmount() >= 100000 || user.getTotalUploadCount() >= 100) {
+            sellerLevel = 5;
+        } else if (user.getTotalSalesAmount() >= 50000 || user.getTotalUploadCount() >= 50) {
+            sellerLevel = 4;
+        } else if (user.getTotalSalesAmount() >= 25000 || user.getTotalUploadCount() >= 25) {
+            sellerLevel = 3;
+        } else if (user.getTotalSalesAmount() >= 12500 || user.getTotalUploadCount() >= 10) {
+            sellerLevel = 2;
+        } else if (user.getTotalSalesAmount() >= 1 || user.getTotalUploadCount() >= 1) {
+            sellerLevel = 1;
+        }
+
+        user.setUserLevel(userLevel);
+        user.setSellerLevel(sellerLevel);
     }
+
 }

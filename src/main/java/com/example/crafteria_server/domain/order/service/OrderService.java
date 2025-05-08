@@ -64,10 +64,12 @@ public class OrderService {
     }
 
     public OrderDto.OrderResponse createOrder(Long userId, OrderDto.OrderRequest request, List<MultipartFile> files) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
-        Manufacturer manufacturer = manufacturerRepository.findById(request.getManufacturerId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조사를 찾을 수 없습니다."));
-        String paymentId = UUID.randomUUID().toString();  // 결제 ID 생성
+        User user = userRepository.findById(userId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+        Manufacturer manufacturer = manufacturerRepository.findById(request.getManufacturerId()).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "제조사를 찾을 수 없습니다."));
 
+        String paymentId = UUID.randomUUID().toString();
         Order order = Order.builder()
                 .user(user)
                 .manufacturer(manufacturer)
@@ -77,7 +79,7 @@ public class OrderService {
                 .recipientEmail(request.getRecipientEmail())
                 .specialRequest(request.getSpecialRequest())
                 .purchasePrice(request.getPurchasePrice())
-                .status(getOrderStatusFromKey(request.getStatus()))
+                .status(OrderStatus.ORDERED)
                 .paymentId(paymentId)
                 .build();
 
@@ -85,37 +87,38 @@ public class OrderService {
         for (int i = 0; i < request.getOrderItems().size(); i++) {
             OrderDto.OrderItemDto itemDto = request.getOrderItems().get(i);
             MultipartFile file = files.get(i);
-            File savedFile = fileService.saveModel(file);  // 파일 저장
-            Technology technology = technologyRepository.findById(itemDto.getTechnologyId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "기술 정보를 찾을 수 없습니다."));
+            File savedFile = fileService.saveModel(file);
+            Technology technology = technologyRepository.findById(itemDto.getTechnologyId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "기술 정보를 찾을 수 없습니다."));
 
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
                     .file(savedFile)
-                    .technology(technology)  // 주문 항목에 기술 연결
+                    .technology(technology)
                     .widthSize(itemDto.getWidthSize())
                     .lengthSize(itemDto.getLengthSize())
                     .heightSize(itemDto.getHeightSize())
                     .magnification(itemDto.getMagnification())
                     .quantity(itemDto.getQuantity())
                     .build();
-
             orderItems.add(orderItem);
         }
 
-        // 구매자
+        order.setOrderItems(orderItems);
+        orderRepository.save(order);
+
+        // 구매자 유저 레벨 업데이트
         user.setTotalPurchaseCount(user.getTotalPurchaseCount() + 1);
         user.setTotalPurchaseAmount(user.getTotalPurchaseAmount() + order.getPurchasePrice());
         userService.updateUserLevel(user);
         userRepository.save(user);
 
-// 판매자
+        // 판매자 레벨 업데이트
         User seller = manufacturer.getDashboardUser();
         seller.setTotalPrintedCount(seller.getTotalPrintedCount() + 1);
         seller.setTotalPrintedAmount(seller.getTotalPrintedAmount() + order.getPurchasePrice());
         userService.updateUserLevel(seller);
         userRepository.save(seller);
-        order.setOrderItems(orderItems);
-        orderRepository.save(order);
 
         return OrderDto.OrderResponse.from(order);
     }

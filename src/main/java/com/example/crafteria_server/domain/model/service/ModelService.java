@@ -70,7 +70,6 @@ public class ModelService {
     public UserModelDto.ModelResponse uploadModel(Long userId, UserModelDto.ModelUploadRequest request) {
         User user = userRepository.findById(userId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
-        log.info("userid: {}", user.getId());
 
         Author author = authorRepository.findById(user.getId()).orElseGet(() -> Author.builder()
                 .user(user)
@@ -80,10 +79,6 @@ public class ModelService {
                 .modelCount(0)
                 .viewCount(0)
                 .build());
-
-        user.setTotalUploadCount(user.getTotalUploadCount() + 1);
-        userService.updateUserLevel(user);
-        userRepository.save(user);
 
         if (author.getRealname() == null) {
             author.setRealname(user.getRealname());
@@ -109,6 +104,12 @@ public class ModelService {
                 .build();
 
         modelRepository.save(newModel);
+
+        // 업로드 수 증가 및 판매자 레벨 갱신
+        user.setTotalUploadCount(user.getTotalUploadCount() + 1);
+        userService.updateUserLevel(user);
+        userRepository.save(user);
+
         return UserModelDto.ModelResponse.from(newModel, false, newModel.isDownloadable());
     }
 
@@ -140,38 +141,25 @@ public class ModelService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 구매한 모델입니다.");
         });
 
-        ModelPurchase purchase;
-
-
-
-        if (model.getPrice() == 0) {
-            // 무료 구매 시 paymentId 없이 verified = true 로 저장
-            purchase = ModelPurchase.builder()
-                    .user(user)
-                    .model(model)
-                    .verified(true)
-                    .build();
-        } else {
-            // 유료 구매 시 paymentId 생성하고 verified = false 로 저장
-            String paymentId = UUID.randomUUID().toString();
-            purchase = ModelPurchase.builder()
-                    .user(user)
-                    .model(model)
-                    .paymentId(paymentId)
-                    .verified(false)
-                    .build();
-        }
+        ModelPurchase purchase = ModelPurchase.builder()
+                .user(user)
+                .model(model)
+                .paymentId(model.getPrice() > 0 ? UUID.randomUUID().toString() : null)
+                .verified(model.getPrice() == 0)
+                .build();
 
         ModelPurchase savedPurchase = modelPurchaseRepository.save(purchase);
 
         model.setDownloadCount(model.getDownloadCount() + 1);
         modelRepository.save(model);
 
+        // 구매자 유저 레벨 업데이트
         user.setTotalPurchaseCount(user.getTotalPurchaseCount() + 1);
         user.setTotalPurchaseAmount(user.getTotalPurchaseAmount() + model.getPrice());
         userService.updateUserLevel(user);
         userRepository.save(user);
 
+        // 판매자 레벨 업데이트
         User seller = model.getAuthor().getUser();
         seller.setTotalSalesCount(seller.getTotalSalesCount() + 1);
         seller.setTotalSalesAmount(seller.getTotalSalesAmount() + model.getPrice());
