@@ -65,6 +65,9 @@ public class PaymentService {
         }
 
         orderRepository.save(order);
+
+        log.info("[결제 완료] 주문ID: {}, 결제ID: {}, 최종상태: {}", order.getId(), paymentId, order.getStatus());
+
         return new PaymentDto.PaymentResultDto(payment.getStatus(), "결제가 성공적으로 처리되었습니다.");
     }
 

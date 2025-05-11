@@ -15,6 +15,7 @@ import com.example.crafteria_server.domain.review.repository.ReviewRepository;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j(topic = "ReviewService")
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -68,6 +70,9 @@ public class ReviewService {
         order.setReview(review);  // 주문에 리뷰 연결
         orderRepository.save(order);
 
+        log.info("리뷰 작성: userId={}, orderId={}, manufacturerId={}, rating={}, content={}",
+                userId, order.getId(), manufacturer.getId(), requestDto.getRating(), requestDto.getContent());
+
         return ReviewDto.ReviewResponseDto.from(review);
     }
 
@@ -86,9 +91,15 @@ public class ReviewService {
         List<File> newImages = saveImages(requestDto.getImageFiles());
         review.setImages(newImages);
 
+        String oldContent = review.getContent();
+        int oldRating = review.getRating();
+
         review.setContent(requestDto.getContent());
         review.setRating(requestDto.getRating());
         reviewRepository.save(review);
+
+        log.info("리뷰 수정: userId={}, reviewId={}, orderId={}, oldContent={}, newContent={}, oldRating={}, newRating={}",
+                userId, review.getId(), review.getOrder().getId(), oldContent, requestDto.getContent(), oldRating, requestDto.getRating());
 
         return ReviewDto.ReviewResponseDto.from(review);
     }
@@ -101,6 +112,8 @@ public class ReviewService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인의 리뷰만 삭제할 수 있습니다.");
         }
 
+        Long orderId = review.getOrder().getId();
+
         fileService.deleteFiles(review.getImages());
         reviewRepository.delete(review);
         Manufacturer manufacturer = review.getManufacturer();
@@ -108,6 +121,9 @@ public class ReviewService {
             manufacturer.setTotalReviews(manufacturer.getTotalReviews() - 1);  // 리뷰 수 감소
             manufacturerRepository.save(manufacturer);
         }
+
+        log.info("리뷰 삭제: userId={}, reviewId={}, orderId={}", userId, reviewId, orderId);
+
         updateManufacturerRating(review.getManufacturer());
     }
 

@@ -48,6 +48,14 @@ public class EquipmentService {
                 .printSpeed(request.getPrintSpeed())
                 .build();
 
+        log.info("[장비 등록] 이름: {}, 설명: {}, 제조사 ID: {}, 상태: {}, 출력속도: {}",
+                equipment.getName(),
+                equipment.getDescription(),
+                manufacturer.getId(),
+                equipment.getStatus(),
+                equipment.getPrintSpeed()
+        );
+
         Equipment savedEquipment = equipmentRepository.save(equipment);
         return EquipmentDto.EquipmentResponse.from(savedEquipment);
     }
