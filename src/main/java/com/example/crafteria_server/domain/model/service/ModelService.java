@@ -110,6 +110,17 @@ public class ModelService {
         userService.updateUserLevel(user);
         userRepository.save(user);
 
+        log.info("[도면 업로드 처리] 유저ID: {}, 업로드 후 총 업로드 수: {}", userId, user.getTotalUploadCount());
+
+        log.info("[도면 업로드] userId={}, modelName='{}', price={}, downloadable={}, category={}, fileName={}",
+                userId,
+                request.getName(),
+                request.getPrice(),
+                request.isDownloadable(),
+                request.getCategory(),
+                request.getModelFile().getOriginalFilename()
+        );
+
         return UserModelDto.ModelResponse.from(newModel, false, newModel.isDownloadable());
     }
 
@@ -153,6 +164,8 @@ public class ModelService {
         model.setDownloadCount(model.getDownloadCount() + 1);
         modelRepository.save(model);
 
+
+
         // 구매자 유저 레벨 업데이트
         user.setTotalPurchaseCount(user.getTotalPurchaseCount() + 1);
         user.setTotalPurchaseAmount(user.getTotalPurchaseAmount() + model.getPrice());
@@ -165,6 +178,9 @@ public class ModelService {
         seller.setTotalSalesAmount(seller.getTotalSalesAmount() + model.getPrice());
         userService.updateUserLevel(seller);
         userRepository.save(seller);
+
+        log.info("[도면 구매 처리] 구매자: {}, 판매자: {}, 도면ID: {}, 가격: {}, 다운로드 가능: {}",
+                user.getUsername(), seller.getUsername(), modelId, model.getPrice(), model.isDownloadable());
 
         return UserModelDto.ModelResponse.from(savedPurchase, model.isDownloadable());
     }
@@ -190,6 +206,9 @@ public class ModelService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "이 도면을 수정할 권한이 없습니다.");
         }
 
+        log.info("[도면 수정 - 수정 전] modelId={}, name={}, price={}, category={}, downloadable={}",
+                model.getId(), model.getName(), model.getPrice(), model.getCategory(), model.isDownloadable());
+
         model.setName(request.getName());
         model.setDescription(request.getDescription());
         model.setPrice(request.getPrice());
@@ -204,6 +223,9 @@ public class ModelService {
             model.setModelFile(modelFile);
         }
 
+        log.info("[도면 수정 - 수정 후] modelId={}, name={}, price={}, category={}, downloadable={}",
+                model.getId(), model.getName(), model.getPrice(), model.getCategory(), model.isDownloadable());
+
         modelRepository.save(model);
         return UserModelDto.ModelResponse.from(model, false, model.isDownloadable());
     }
@@ -215,6 +237,9 @@ public class ModelService {
         if (!model.getAuthor().getId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "이 도면을 삭제할 권한이 없습니다.");
         }
+
+        log.info("[도면 삭제] modelId={}, modelName={}, deletedByUserId={}",
+                model.getId(), model.getName(), userId);
 
         model.setDeleted(true);
         modelRepository.save(model);

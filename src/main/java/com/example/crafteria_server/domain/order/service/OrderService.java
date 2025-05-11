@@ -120,6 +120,14 @@ public class OrderService {
         userService.updateUserLevel(seller);
         userRepository.save(seller);
 
+        log.info("[주문 생성] 사용자: {}, 수령인: {}, 주문금액: {}, 주문항목수: {}, 제조사: {}, 결제ID: {}",
+                user.getUsername(),
+                order.getRecipientName(),
+                order.getPurchasePrice(),
+                orderItems.size(),
+                manufacturer.getName(),
+                paymentId);
+
         return OrderDto.OrderResponse.from(order);
     }
 
@@ -135,6 +143,8 @@ public class OrderService {
         order.setStatus(OrderStatus.CANCELED);
         orderRepository.save(order);
 
+        log.info("[주문 취소] 사용자 ID: {}, 주문ID: {}, 주문상태: CANCELED", userId, orderId);
+
         return OrderDto.OrderResponse.from(orderRepository.save(order));
     }
 
@@ -147,10 +157,11 @@ public class OrderService {
         }
 
         OrderStatus newStatus = getOrderStatusFromKey(statusChangeRequest.getNewStatus());
+        OrderStatus prevStatus = order.getStatus();
         order.setStatus(newStatus);
-
         orderRepository.save(order);
-        log.info("변경된 주문 상태: {}", newStatus);
+
+        log.info("[주문 상태 변경] 제조사ID: {}, 주문ID: {}, 이전상태: {}, 변경상태: {}", manufacturerId, orderId, prevStatus, newStatus);
 
         return OrderDto.OrderResponse.from(order);
     }

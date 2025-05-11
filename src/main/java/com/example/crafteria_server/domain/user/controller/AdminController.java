@@ -26,13 +26,16 @@ public class AdminController {
     @PatchMapping("/dashboard/{userId}/approve")
     @Operation(summary = "대시보드 사용자 승인", description = "대시보드 사용자를 승인합니다.")
     public ResponseEntity<?> approveDashboardUser(@PathVariable Long userId) {
+        log.info("대시보드 사용자 승인 요청 - 대상 유저ID: {}", userId);
         userService.updateDashboardStatus(userId, DashboardStatus.APPROVED);
         return ResponseEntity.ok("유저가 승인되었습니다.");
     }
 
+
     @PatchMapping("/dashboard/{userId}/reject")
     @Operation(summary = "대시보드 사용자 거절", description = "대시보드 사용자를 거절합니다.")
     public ResponseEntity<?> rejectDashboardUser(@PathVariable Long userId) {
+        log.info("대시보드 사용자 거절 요청 - 대상 유저ID: {}", userId);
         userService.updateDashboardStatus(userId, DashboardStatus.REJECTED);
         return ResponseEntity.ok("유저가 거절되었습니다.");
     }

@@ -55,6 +55,7 @@ public class UserModelController {
         if (principalDetails == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
+
         return JsonBody.of(200, "성공", modelService.purchaseModel(principalDetails.getUserId(), modelId));
     }
 }

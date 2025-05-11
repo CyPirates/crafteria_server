@@ -1,6 +1,10 @@
 package com.example.crafteria_server.domain.model.controller;
 
+import com.example.crafteria_server.domain.file.entity.File;
+import com.example.crafteria_server.domain.file.service.FileService;
 import com.example.crafteria_server.domain.model.dto.UserModelDto;
+import com.example.crafteria_server.domain.model.entity.Model;
+import com.example.crafteria_server.domain.model.repository.ModelRepository;
 import com.example.crafteria_server.domain.model.service.ModelService;
 import com.example.crafteria_server.global.response.JsonBody;
 import com.example.crafteria_server.global.security.PrincipalDetails;
@@ -22,7 +26,8 @@ import java.util.List;
 @Tag(name = "도면 API - 작가", description = "작가 도면 관련 API")
 public class AuthorModelContoller {
     private final ModelService modelService;
-
+    private final ModelRepository modelRepository;
+    private final FileService fileService;
     // 내가 올린 도면 조회
     @GetMapping("/list/my")
     @Operation(summary = "내가 올린 도면 조회", description = "내가 올린 도면을 조회합니다.")
@@ -49,6 +54,7 @@ public class AuthorModelContoller {
         if (principalDetails == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
+
         return JsonBody.of(200, "성공", modelService.updateModel(modelId, principalDetails.getUserId(), request));
     }
 
@@ -59,6 +65,7 @@ public class AuthorModelContoller {
         if (principalDetails == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
+
         modelService.deleteModel(modelId, principalDetails.getUserId());
         return JsonBody.of(200, "도면이 삭제되었습니다.", null);
     }

@@ -11,6 +11,7 @@ import com.google.api.Authentication;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j(topic = "UserInfoController")
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -67,7 +69,7 @@ public class UserInfoController {
 
     // 🔥 로그인한 유저가 자기 자신의 정보 수정 (이름 & 주소)
     @PatchMapping("/me")
-    @Operation(summary = "유저 정보 수정", description = "로그인한 사용자가 자신의 이름과 실명, 주소를 수정합니다.")
+    @Operation(summary = "현재 사용자 정보 수정", description = "현재 로그인한 사용자의 정보를 수정합니다.")
     public ResponseEntity<UserResponse> updateCurrentUser(
             @AuthenticationPrincipal PrincipalDetails principalDetails,
             @RequestBody @Valid UserUpdateRequest request) {
@@ -75,6 +77,9 @@ public class UserInfoController {
         if (principalDetails == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
+
+        log.info("회원정보 수정 요청 - 유저ID: {}, 변경 정보: username={}, realname={}, address={}",
+                principalDetails.getUserId(), request.getUsername(), request.getRealname(), request.getAddress());
 
         User updatedUser = userInfoService.updateCurrentUser(principalDetails.getUserId(), request);
         return ResponseEntity.ok(UserResponse.from(updatedUser));
