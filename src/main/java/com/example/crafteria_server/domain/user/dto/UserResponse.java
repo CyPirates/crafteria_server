@@ -5,6 +5,8 @@ import com.example.crafteria_server.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
+import java.util.List;
+
 @Getter
 @Setter
 @Builder
@@ -25,9 +27,6 @@ public class UserResponse {
 
     @Schema(description = "유저 권한", example = "ROLE_USER")
     private Role role;
-
-    @Schema(description = "주소", example = "서울시 강남구")
-    private String address;
 
     @Schema(description = "총 도면 구매 횟수", example = "3")
     private int totalPurchaseCount;
@@ -56,23 +55,17 @@ public class UserResponse {
     @Schema(description = "판매자 레벨(1~5)", example = "4")
     private int sellerLevel;
 
-    public static UserResponse from(User user) {
+    private List<UserAddressDto.UserAddressResponse> addresses;
+
+    public static UserResponse from(User user, List<UserAddressDto.UserAddressResponse> addresses) {
         return UserResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .realname(user.getRealname())
-                .oauth2Id(user.getOauth2Id())
                 .role(user.getRole())
-                .address(user.getAddress())
-                .totalPurchaseCount(user.getTotalPurchaseCount())
-                .totalPurchaseAmount(user.getTotalPurchaseAmount())
-                .totalUploadCount(user.getTotalUploadCount())
-                .totalSalesCount(user.getTotalSalesCount())
-                .totalSalesAmount(user.getTotalSalesAmount())
-                .totalPrintedCount(user.getTotalPrintedCount())
-                .totalPrintedAmount(user.getTotalPrintedAmount())
                 .userLevel(user.getUserLevel())
                 .sellerLevel(user.getSellerLevel())
+                .addresses(addresses)
                 .build();
     }
 }

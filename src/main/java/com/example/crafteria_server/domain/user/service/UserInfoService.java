@@ -45,9 +45,10 @@ public class UserInfoService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
         user.setUsername(request.getUsername());
-        user.setAddress(request.getAddress());
         user.setRealname(request.getRealname());
 
         return userRepository.save(user);
     }
+
+
 }
