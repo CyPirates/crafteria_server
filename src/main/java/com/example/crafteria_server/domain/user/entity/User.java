@@ -7,6 +7,8 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "user")
@@ -22,7 +24,6 @@ public class User extends BaseEntity {
     private String provider;
     private String providerId;
     private String phoneNumber;
-    private String address;
 
     @Column(nullable = true)
     private String password;
@@ -84,4 +85,6 @@ public class User extends BaseEntity {
     @Builder.Default
     private int sellerLevel = 0;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserAddress> addresses = new ArrayList<>();
 }

@@ -2,9 +2,12 @@ package com.example.crafteria_server.domain.user.service;
 
 import com.example.crafteria_server.domain.user.dto.LoginDto;
 import com.example.crafteria_server.domain.user.dto.RegisterRequest;
+import com.example.crafteria_server.domain.user.dto.UserAddressDto;
+import com.example.crafteria_server.domain.user.dto.UserUpdateRequest;
 import com.example.crafteria_server.domain.user.entity.DashboardStatus;
 import com.example.crafteria_server.domain.user.entity.Role;
 import com.example.crafteria_server.domain.user.entity.User;
+import com.example.crafteria_server.domain.user.entity.UserAddress;
 import com.example.crafteria_server.domain.user.repository.UserRepository;
 import com.example.crafteria_server.global.security.PrincipalDetails;
 import com.example.crafteria_server.global.security.TokenProvider;
@@ -24,6 +27,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j(topic = "UserService")
@@ -44,7 +48,6 @@ public class UserService implements UserDetailsService {
                 .username(request.getUsername())
                 .realname(request.getRealname())
                 .phoneNumber(request.getPhoneNumber())
-                .address(request.getAddress())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.DASHBOARD)
                 .dashboardStatus(DashboardStatus.PENDING) // 일반 회원가입만 PENDING 설정
@@ -192,5 +195,104 @@ public class UserService implements UserDetailsService {
             log.info("📉 판매자 레벨다운 - 유저ID: {}, 이름: {}, {} → {}", user.getId(), user.getUsername(), prevSellerLevel, newSellerLevel);
         }
     }
+
+    public UserAddressDto.UserAddressResponse updateUserAddress(Long userId, Long addressId, UserAddressDto.UserAddressRequest dto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+
+        UserAddress address = user.getAddresses().stream()
+                .filter(a -> a.getId().equals(addressId))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주소를 찾을 수 없습니다."));
+
+        if (dto.isDefault()) {
+            user.getAddresses().forEach(a -> a.setDefault(false));
+            address.setDefault(true);
+        }
+
+        address.setLabel(dto.getLabel());
+        address.setBaseAddress(dto.getBaseAddress());
+        address.setDetailAddress(dto.getDetailAddress());
+
+        userRepository.save(user);
+
+        log.info("✏️ 주소 수정 - 유저ID: {}, 주소ID: {}, 라벨: {}, 기본여부: {}, 주소: {} {}", userId, addressId, dto.getLabel(), dto.isDefault(), dto.getBaseAddress(), dto.getDetailAddress());
+
+        return UserAddressDto.UserAddressResponse.builder()
+                .id(address.getId())
+                .label(address.getLabel())
+                .baseAddress(address.getBaseAddress())
+                .detailAddress(address.getDetailAddress())
+                .isDefault(address.isDefault())
+                .build();
+    }
+
+    public void deleteUserAddress(Long userId, Long addressId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+
+        user.getAddresses().removeIf(address -> address.getId().equals(addressId));
+        userRepository.save(user);
+
+        log.info("🗑️ 주소 삭제 - 유저ID: {}, 주소ID: {}", userId, addressId);
+    }
+
+    public List<UserAddressDto.UserAddressResponse> getUserAddresses(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+        return user.getAddresses().stream()
+                .map(a -> UserAddressDto.UserAddressResponse.builder()
+                        .id(a.getId())
+                        .label(a.getLabel())
+                        .baseAddress(a.getBaseAddress())
+                        .detailAddress(a.getDetailAddress())
+                        .isDefault(a.isDefault())
+                        .build())
+                .toList();
+    }
+
+    public void updateBasicUserInfo(Long userId, UserUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+
+        user.setUsername(request.getUsername());
+        user.setRealname(request.getRealname());
+
+        userRepository.save(user);
+
+        log.info("👤 사용자 정보 수정 - 유저ID: {}, 이름: {}, 실명: {}", userId, request.getUsername(), request.getRealname());
+    }
+
+    public UserAddressDto.UserAddressResponse addUserAddress(Long userId, UserAddressDto.UserAddressRequest dto) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+
+        if (dto.isDefault()) {
+            user.getAddresses().forEach(addr -> addr.setDefault(false));
+        }
+
+        UserAddress address = UserAddress.builder()
+                .label(dto.getLabel())
+                .baseAddress(dto.getBaseAddress())
+                .detailAddress(dto.getDetailAddress())
+                .isDefault(dto.isDefault())
+                .user(user)
+                .build();
+
+        user.getAddresses().add(address);
+        userRepository.save(user);
+
+        log.info("📌 주소 추가 - 유저ID: {}, 라벨: {}, 기본여부: {}, 주소: {} {}", userId, dto.getLabel(), dto.isDefault(), dto.getBaseAddress(), dto.getDetailAddress());
+
+        return UserAddressDto.UserAddressResponse.builder()
+                .id(address.getId())
+                .label(address.getLabel())
+                .baseAddress(address.getBaseAddress())
+                .detailAddress(address.getDetailAddress())
+                .isDefault(address.isDefault())
+                .build();
+    }
+
+
 
 }

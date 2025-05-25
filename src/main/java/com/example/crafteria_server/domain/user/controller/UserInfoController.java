@@ -1,5 +1,6 @@
 package com.example.crafteria_server.domain.user.controller;
 
+import com.example.crafteria_server.domain.user.dto.UserAddressDto;
 import com.example.crafteria_server.domain.user.dto.UserResponse;
 import com.example.crafteria_server.domain.user.dto.UserUpdateRequest;
 import com.example.crafteria_server.domain.user.entity.User;
@@ -37,40 +38,17 @@ public class UserInfoController {
     @GetMapping("/me")
     @Operation(summary = "현재 사용자 조회", description = "현재 로그인한 사용자의 정보를 조회합니다.")
     public JsonBody<UserResponse> getCurrentUser(@AuthenticationPrincipal PrincipalDetails principalDetails) {
-        // 인증되지 않은 사용자 처리
         if (principalDetails == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
-
-        // 현재 로그인한 사용자 정보 가져오기
         User user = userInfoService.getCurrentUser(principalDetails.getUserId());
-        return JsonBody.of(200, "성공", UserResponse.from(user));
+        List<UserAddressDto.UserAddressResponse> addresses = userService.getUserAddresses(user.getId());
+        return JsonBody.of(200, "성공", UserResponse.from(user, addresses));
     }
 
-    // 특정 사용자 정보 조회 API
-    @GetMapping("/{userId}")
-    @Operation(summary = "특정 사용자 조회", description = "특정 사용자의 정보를 조회합니다.")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable Long userId) {
-        User user = userInfoService.getUserById(userId);
-        UserResponse response = UserResponse.from(user);
-        return ResponseEntity.ok(response);
-    }
-
-    // 전체 사용자 정보 조회 API
-    @GetMapping
-    @Operation(summary = "모든 사용자 조회", description = "모든 사용자의 정보를 조회합니다.")
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
-        List<User> users = userInfoService.getAllUsers();
-        List<UserResponse> responses = users.stream()
-                .map(UserResponse::from)
-                .toList();
-        return ResponseEntity.ok(responses);
-    }
-
-    // 🔥 로그인한 유저가 자기 자신의 정보 수정 (이름 & 주소)
     @PatchMapping("/me")
     @Operation(summary = "현재 사용자 정보 수정", description = "현재 로그인한 사용자의 정보를 수정합니다.")
-    public ResponseEntity<UserResponse> updateCurrentUser(
+    public JsonBody<UserResponse> updateCurrentUser(
             @AuthenticationPrincipal PrincipalDetails principalDetails,
             @RequestBody @Valid UserUpdateRequest request) {
 
@@ -78,26 +56,98 @@ public class UserInfoController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
 
-        log.info("회원정보 수정 요청 - 유저ID: {}, 변경 정보: username={}, realname={}, address={}",
-                principalDetails.getUserId(), request.getUsername(), request.getRealname(), request.getAddress());
+        log.info("회원정보 수정 요청 - 유저ID: {}, 변경 정보: username={}, realname={}",
+                principalDetails.getUserId(), request.getUsername(), request.getRealname());
 
-        User updatedUser = userInfoService.updateCurrentUser(principalDetails.getUserId(), request);
-        return ResponseEntity.ok(UserResponse.from(updatedUser));
+        userService.updateBasicUserInfo(principalDetails.getUserId(), request);
+        User updatedUser = userInfoService.getCurrentUser(principalDetails.getUserId());
+        List<UserAddressDto.UserAddressResponse> addresses = userService.getUserAddresses(updatedUser.getId());
+        return JsonBody.of(200, "성공", UserResponse.from(updatedUser, addresses));
+    }
+
+    @GetMapping("/{userId}")
+    @Operation(summary = "특정 사용자 조회", description = "특정 사용자의 정보를 조회합니다.")
+    public JsonBody<UserResponse> getUserById(@PathVariable Long userId) {
+        User user = userInfoService.getUserById(userId);
+        List<UserAddressDto.UserAddressResponse> addresses = userService.getUserAddresses(user.getId());
+        return JsonBody.of(200, "성공", UserResponse.from(user, addresses));
+    }
+
+    @GetMapping
+    @Operation(summary = "모든 사용자 조회", description = "모든 사용자의 정보를 조회합니다.")
+    public JsonBody<List<UserResponse>> getAllUsers() {
+        List<User> users = userInfoService.getAllUsers();
+        List<UserResponse> responses = users.stream()
+                .map(user -> UserResponse.from(user, userService.getUserAddresses(user.getId())))
+                .toList();
+        return JsonBody.of(200, "성공", responses);
+    }
+
+    @PostMapping("/me/address")
+    @Operation(summary = "주소 추가", description = "현재 로그인한 사용자 주소를 추가합니다.")
+    public JsonBody<UserAddressDto.UserAddressResponse> addAddress(
+            @AuthenticationPrincipal PrincipalDetails principalDetails,
+            @RequestBody @Valid UserAddressDto.UserAddressRequest request
+    ) {
+        if (principalDetails == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        UserAddressDto.UserAddressResponse response = userService.addUserAddress(principalDetails.getUserId(), request);
+        return JsonBody.of(200, "주소가 추가되었습니다.", response);
+    }
+
+    @PatchMapping("/me/address/{addressId}")
+    @Operation(summary = "주소 수정", description = "현재 로그인한 사용자의 주소 정보를 수정합니다.")
+    public JsonBody<UserAddressDto.UserAddressResponse> updateAddress(
+            @AuthenticationPrincipal PrincipalDetails principalDetails,
+            @PathVariable Long addressId,
+            @RequestBody @Valid UserAddressDto.UserAddressRequest request
+    ) {
+        if (principalDetails == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        UserAddressDto.UserAddressResponse response = userService.updateUserAddress(principalDetails.getUserId(), addressId, request);
+        return JsonBody.of(200, "주소가 수정되었습니다.", response);
+    }
+
+    @DeleteMapping("/me/address/{addressId}")
+    @Operation(summary = "주소 삭제", description = "현재 로그인한 사용자의 주소를 삭제합니다.")
+    public JsonBody<String> deleteAddress(
+            @AuthenticationPrincipal PrincipalDetails principalDetails,
+            @PathVariable Long addressId
+    ) {
+        if (principalDetails == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        userService.deleteUserAddress(principalDetails.getUserId(), addressId);
+        return JsonBody.of(200, "주소가 삭제되었습니다.",null);
+    }
+
+    @GetMapping("/me/addresses")
+    @Operation(summary = "주소 목록 조회", description = "현재 로그인한 사용자의 주소 목록을 조회합니다.")
+    public JsonBody<List<UserAddressDto.UserAddressResponse>> getMyAddresses(@AuthenticationPrincipal PrincipalDetails principalDetails) {
+        if (principalDetails == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        List<UserAddressDto.UserAddressResponse> addresses = userService.getUserAddresses(principalDetails.getUserId());
+        return JsonBody.of(200, "성공", addresses);
     }
 
     @DeleteMapping("/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "유저 삭제", description = "특정 사용자를 삭제합니다.")
-    public ResponseEntity<?> deleteUser(@PathVariable Long userId, @AuthenticationPrincipal PrincipalDetails principalDetails) throws AccessDeniedException {
+    public JsonBody<String> deleteUser(@PathVariable Long userId, @AuthenticationPrincipal PrincipalDetails principalDetails) throws AccessDeniedException {
         userService.deleteUser(userId, principalDetails);
-        return ResponseEntity.ok("User deleted successfully.");
+        return JsonBody.of(200, "사용자가 삭제되었습니다.", null);
     }
 
     @PostMapping("/{userId}/ban")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "유저 정지", description = "특정 사용자를 정지합니다.")
-    public ResponseEntity<?> banUser(@PathVariable Long userId, @RequestParam("until") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime until, @AuthenticationPrincipal PrincipalDetails principalDetails) throws AccessDeniedException {
+    public JsonBody<String> banUser(@PathVariable Long userId,
+                                    @RequestParam("until") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime until,
+                                    @AuthenticationPrincipal PrincipalDetails principalDetails) throws AccessDeniedException {
         userService.banUser(userId, until, principalDetails);
-        return ResponseEntity.ok("User banned until " + until);
+        return JsonBody.of(200, "사용자가 " + until + "까지 정지되었습니다.", null);
     }
 }
