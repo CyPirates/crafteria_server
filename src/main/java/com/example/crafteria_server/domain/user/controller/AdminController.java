@@ -1,6 +1,5 @@
 package com.example.crafteria_server.domain.user.controller;
 
-import com.example.crafteria_server.domain.user.dto.DashboardPendingUserDto;
 import com.example.crafteria_server.domain.user.entity.DashboardStatus;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.domain.user.repository.UserRepository;
@@ -42,18 +41,20 @@ public class AdminController {
     }
 
     @GetMapping("/dashboard/pending")
+    @Operation(summary = "대시보드 대기 상태 조회", description = "대시보드 대기 상태 목록을 조회합니다.")
     public ResponseEntity<?> getPendingDashboardUsers() {
         List<User> pendingUsers = userRepository.findByDashboardStatus(DashboardStatus.PENDING);
-        List<DashboardPendingUserDto> result = pendingUsers.stream()
-                .map(user -> new DashboardPendingUserDto(
-                        user.getId(),
-                        user.getUsername(),
-                        user.getRealname(),
-                        user.getManufacturerName(),
-                        user.getManufacturerDescription()
-                ))
+        List<Map<String, Object>> result = pendingUsers.stream()
+                .map(user -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", user.getId());
+                    map.put("username", user.getUsername());
+                    map.put("realname", user.getRealname());
+                    map.put("manufacturerName", user.getManufacturerName()); // null 허용됨
+                    map.put("manufacturerDescription", user.getManufacturerDescription());
+                    return map;
+                })
                 .toList();
-
         return ResponseEntity.ok(result);
     }
 }
