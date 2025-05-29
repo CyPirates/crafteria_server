@@ -105,8 +105,7 @@ public class UserService implements UserDetailsService {
         String manufacturerId = Optional.ofNullable(user.getManufacturer())
                 .filter(m -> user.getDashboardStatus() == DashboardStatus.APPROVED)
                 .map(m -> m.getId().toString())
-                .or(() -> Optional.ofNullable(user.getManufacturerName()))
-                .orElse("제조사 등록이 안됐습니다.");
+                .orElse(null);
 
         return LoginDto.LoginResponse.builder()
                 .username(user.getUsername())
