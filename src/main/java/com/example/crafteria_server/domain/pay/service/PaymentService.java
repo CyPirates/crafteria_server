@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
@@ -49,8 +50,19 @@ public class PaymentService {
                 .orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다."));
 
         PaymentDto.PaymentResponse payment = getPaymentFromPortOne(paymentId);
-        if (!payment.getAmount().getTotal().equals(BigDecimal.valueOf(order.getPurchasePrice()))) {
-            throw new Exception("결제 금액이 주문 금액과 일치하지 않습니다.");
+
+        log.info("[결제 금액] 주문ID: {}, 결제ID: {}, 결제금액: {}",
+                order.getId(), paymentId, payment.getAmount().getTotal());
+
+
+
+        BigDecimal basePrice = BigDecimal.valueOf(order.getPurchasePrice());
+        BigDecimal vat = basePrice.multiply(BigDecimal.valueOf(0.10)).setScale(0, RoundingMode.CEILING);
+        BigDecimal deliveryFee = BigDecimal.valueOf(3000);
+        BigDecimal expectedTotal = basePrice.add(vat).add(deliveryFee);
+
+        if (payment.getAmount().getTotal().compareTo(expectedTotal) != 0) {
+            throw new Exception("결제 금액이 주문 총액(VAT + 배송비 포함)과 일치하지 않습니다.");
         }
 
         switch (payment.getStatus()) {
@@ -81,8 +93,15 @@ public class PaymentService {
         Model model = modelRepository.findById(modelId)
                 .orElseThrow(() -> new RuntimeException("모델을 찾을 수 없습니다."));
 
-        if (!payment.getAmount().getTotal().equals(BigDecimal.valueOf(model.getPrice()))) {
-            throw new Exception("결제 금액이 모델 가격과 일치하지 않습니다.");
+        log.info("[모델 결제 금액] 모델ID: {}, 결제ID: {}, 결제금액: {}",
+                model.getId(), paymentId, payment.getAmount().getTotal());
+
+        BigDecimal modelPrice = BigDecimal.valueOf(model.getPrice());
+        BigDecimal vat = modelPrice.multiply(BigDecimal.valueOf(0.10)).setScale(0, RoundingMode.CEILING);
+        BigDecimal expectedTotal = modelPrice.add(vat);
+
+        if (payment.getAmount().getTotal().compareTo(expectedTotal) != 0) {
+            throw new Exception("결제 금액이 모델 가격(VAT 포함)과 일치하지 않습니다.");
         }
 
         Optional<ModelPurchase> existingPurchaseOpt = modelPurchaseRepository.findByPaymentId(paymentId);

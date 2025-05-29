@@ -31,7 +31,7 @@ public class CouponDto {
         @Schema(description = "발급일", example = "2023-10-01T10:00:00")
         private LocalDateTime expiredAt;
 
-        @Schema(description = "쿠폰 사용 여부", example = "false")
+        @Schema(description = "쿠폰 타입", example = "MODEL_PURCHASE , ORDER_PURCHASE")
         private CouponType type; // <== 추가
     }
 
@@ -47,7 +47,7 @@ public class CouponDto {
         @Schema(description = "쿠폰 코드", example = "COUPON2023")
         private String code;
 
-        @Schema(description = "할인 퍼센트", example = "10")
+        @Schema(description = "할인 퍼센트", example = "10%")
         private int discountRate;
 
         @Schema(description = "최대 할인 금액", example = "50000")
@@ -62,7 +62,7 @@ public class CouponDto {
         @Schema(description = "쿠폰 사용 여부", example = "false")
         private boolean used;
 
-        @Schema(description = "쿠폰 타입", example = "DISCOUNT")
+        @Schema(description = "쿠폰 타입", example = "MODEL_PURCHASE , ORDER_PURCHASE")
         private CouponType type; // <== 추가
     }
 

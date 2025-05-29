@@ -31,13 +31,11 @@ public class CouponController {
                 .body(JsonBody.of(201, "쿠폰 생성 성공", response));
     }
 
-    @Operation(summary = "쿠폰 삭제", description = "ID로 쿠폰을 삭제합니다.")
     @DeleteMapping("/{id}")
-    public ResponseEntity<JsonBody<Void>> deleteCoupon(@PathVariable Long id) {
+    @Operation(summary = "쿠폰 삭제", description = "ID로 쿠폰을 삭제합니다.")
+    public ResponseEntity<Void> deleteCoupon(@PathVariable Long id) {
         couponService.deleteCoupon(id);
-        return ResponseEntity
-                .status(HttpStatus.NO_CONTENT)
-                .body(JsonBody.of(204, "쿠폰 삭제 성공", null));
+        return ResponseEntity.noContent().build(); // 204 No Content + 본문 없음
     }
 
     @Operation(summary = "사용 가능한 쿠폰 조회", description = "회원의 유효한 쿠폰을 조회합니다.")
