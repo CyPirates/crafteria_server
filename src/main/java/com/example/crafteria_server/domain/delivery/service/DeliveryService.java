@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.AccessDeniedException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -39,6 +41,9 @@ public class DeliveryService {
         if (!order.getManufacturer().getId().equals(user.getManufacturer().getId())) {
             throw new AccessDeniedException("You do not have permission to access this order.");
         }
+
+        order.setStatus(OrderStatus.DELIVERING);
+        orderRepository.save(order);
 
         Delivery delivery = Delivery.builder()
                 .order(order)
@@ -78,5 +83,27 @@ public class DeliveryService {
         }
 
         deliveryRepository.delete(delivery);
+    }
+
+    public DeliveryDto.DeliveryResponse getDeliveryById(Long deliveryId, User user) throws AccessDeniedException {
+        Delivery delivery = deliveryRepository.findById(deliveryId)
+                .orElseThrow(() -> new EntityNotFoundException("Delivery not found"));
+
+        Long userManufacturerId = user.getManufacturer().getId();
+        Long deliveryManufacturerId = delivery.getOrder().getManufacturer().getId();
+
+        if (!userManufacturerId.equals(deliveryManufacturerId)) {
+            throw new AccessDeniedException("You do not have permission to view this delivery.");
+        }
+
+        return DeliveryDto.DeliveryResponse.from(delivery);
+    }
+
+    public List<DeliveryDto.DeliveryResponse> getMyDeliveries(User user) {
+        Long manufacturerId = user.getManufacturer().getId();
+        List<Delivery> deliveries = deliveryRepository.findAllByOrder_Manufacturer_Id(manufacturerId);
+        return deliveries.stream()
+                .map(DeliveryDto.DeliveryResponse::from)
+                .collect(Collectors.toList());
     }
 }
