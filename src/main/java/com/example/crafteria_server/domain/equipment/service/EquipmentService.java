@@ -45,7 +45,16 @@ public class EquipmentService {
                 .status(EquipmentStatus.Available)  // 기본값으로 상태 설정
                 .manufacturer(manufacturer)
                 .image(savedFile)
+                .printSpeed(request.getPrintSpeed())
                 .build();
+
+        log.info("[장비 등록] 이름: {}, 설명: {}, 제조사 ID: {}, 상태: {}, 출력속도: {}",
+                equipment.getName(),
+                equipment.getDescription(),
+                manufacturer.getId(),
+                equipment.getStatus(),
+                equipment.getPrintSpeed()
+        );
 
         Equipment savedEquipment = equipmentRepository.save(equipment);
         return EquipmentDto.EquipmentResponse.from(savedEquipment);
@@ -82,6 +91,17 @@ public class EquipmentService {
     public EquipmentDto.EquipmentResponse updateEquipment(Long id, EquipmentDto.EquipmentRequest request) {
         Equipment equipment = equipmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Equipment not found"));
+
+        if (request.getPrintSpeed() != null) {
+            equipment.setPrintSpeed(request.getPrintSpeed());
+        }
+
+        Manufacturer existingManufacturer = equipment.getManufacturer();
+
+        // 입력된 제조사 ID와 장비의 기존 제조사 ID가 다른 경우 에러 처리
+        if (!existingManufacturer.getId().equals(request.getManufacturerId())) {
+            throw new IllegalArgumentException("The provided manufacturer ID does not match the equipment's current manufacturer.");
+        }
 
         Manufacturer manufacturer = manufacturerRepository.findById(request.getManufacturerId())
                 .orElseThrow(() -> new RuntimeException("Manufacturer not found"));

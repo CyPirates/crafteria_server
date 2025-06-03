@@ -1,4 +1,4 @@
-package com.example.crafteria_server.domain.model.entity;
+package com.example.crafteria_server.domain.technology.entity;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -6,11 +6,9 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum Material {
-    PLA("PLA"),
-    ABS("ABS"),
-    NYLON("NYLON"),
-    WOOD("WOOD"),
-
+    FILAMENT("FILAMENT"),
+    POWDER("POWDER"),
+    LIQUID("LIQUID"),
     ;
     private final String key;
 }

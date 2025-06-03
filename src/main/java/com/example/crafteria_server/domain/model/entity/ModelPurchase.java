@@ -3,10 +3,7 @@ package com.example.crafteria_server.domain.model.entity;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.global.entity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 @Entity
@@ -24,4 +21,11 @@ public class ModelPurchase extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "model_id", nullable = false)
     private Model model;
+
+    @Column(nullable = true, unique = true)
+    private String paymentId; // 결제 ID 추가
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean verified = false;  // 결제 완료 여부
 }

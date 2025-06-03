@@ -3,6 +3,7 @@ package com.example.crafteria_server.domain.order.entity;
 import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
 import com.example.crafteria_server.domain.model.entity.Model;
+import com.example.crafteria_server.domain.review.entity.Review;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.global.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -28,13 +29,13 @@ public class Order extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "order_id") // 외래 키 설정
-    private List<File> modelFiles = new ArrayList<>(); // 여러 도면 파일 리스트
-
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "manufacturer_id", nullable = false)
     private Manufacturer manufacturer;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItem> orderItems = new ArrayList<>();
+
 
     @Column(nullable = false)
     private long purchasePrice;
@@ -47,17 +48,25 @@ public class Order extends BaseEntity {
     private String deliveryAddress;
 
     @Column(nullable = false)
-    private double widthSize;
+    private String recipientName;
 
     @Column(nullable = false)
-    private double lengthSize;
+    private String recipientPhone;
 
     @Column(nullable = false)
-    private double heightSize;
+    private String recipientEmail;
 
-    @Column(nullable = false)
-    private int quantity;
+    @Column(nullable = true)
+    private String specialRequest;
 
-    @Column(nullable = false)
-    private double magnification;
+    @Column(nullable = false, unique = true)
+    private String paymentId; // 결제 ID
+
+    @Column(nullable = true)
+    private String shippingNumber; // 배송번호
+
+    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Review review;
+
+
 }
