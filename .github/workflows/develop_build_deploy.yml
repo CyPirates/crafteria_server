@@ -26,6 +26,9 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Create logs directory for logback
+        run: mkdir -p logs
+
       - name: Set environments
         uses: microsoft/variable-substitution@v1
         with:
