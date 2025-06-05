@@ -1,5 +1,6 @@
 package com.example.crafteria_server.domain.order.entity;
 
+import com.example.crafteria_server.domain.delivery.entity.Delivery;
 import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
 import com.example.crafteria_server.domain.model.entity.Model;
@@ -67,6 +68,9 @@ public class Order extends BaseEntity {
 
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private Review review;
+
+    @OneToOne(mappedBy = "order", fetch = FetchType.LAZY)
+    private Delivery delivery;
 
 
 }
