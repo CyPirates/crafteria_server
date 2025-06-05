@@ -1,6 +1,5 @@
 package com.example.crafteria_server.domain.coupon.entity;
 
-import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -14,18 +13,18 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-@Table(name = "coupon")
-public class Coupon extends BaseEntity {
+@Table(name = "coupon_template")
+public class CouponTemplate extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column(nullable = false, unique = true)
+    private String code; // 사용자가 입력할 쿠폰 코드
 
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, unique = true)
-    private String code;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CouponType type;
 
     @Column(nullable = false)
     private int discountRate;
@@ -34,23 +33,14 @@ public class Coupon extends BaseEntity {
     private int maxDiscountAmount;
 
     @Column(nullable = false)
-    private LocalDateTime issuedAt;
-
-    @Column(nullable = false)
     private LocalDateTime expiredAt;
-
-    @Column(nullable = false)
-    private boolean used;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private CouponType type;  // <== 추가
 
     @Column(nullable = false)
     private int maxPerUser; // 유저당 발급 가능 횟수
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "template_id")
-    private CouponTemplate template;
+    @Column(nullable = false)
+    private int maxTotalIssueCount; // 총 발급 가능 수량 (예: 100)
 
+    @Column(nullable = false)
+    private int currentIssueCount;  // 현재 발급된 수량
 }

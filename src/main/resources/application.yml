@@ -4,7 +4,6 @@ spring:
     url: ${DATASOURCE_URL}
     username: ${DATASOURCE_USERNAME}
     password: ${DATASOURCE_PASSWORD}
-
   jpa:
     open-in-view: false
     hibernate:
@@ -86,5 +85,11 @@ spring:
     api:
       secret: ${PORTONE_API_SECRET}
 
+
 server:
   port: ${SERVER_PORT}
+
+springdoc:
+  use-fqn: true
+
+

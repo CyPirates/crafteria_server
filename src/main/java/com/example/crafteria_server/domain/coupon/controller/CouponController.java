@@ -53,4 +53,17 @@ public class CouponController {
         return ResponseEntity
                 .ok(JsonBody.of(200, "전체 쿠폰 조회 성공", responses));
     }
+
+    @PostMapping("/issue")
+    @Operation(summary = "쿠폰 발급 (코드 입력 방식)", description = "쿠폰 코드를 입력하면 발급됩니다. 발급 횟수 제한이 적용됩니다.")
+    public ResponseEntity<JsonBody<CouponDto.Response>> issueCouponByCode(
+            @RequestParam String code,
+            @RequestParam Long userId) {
+
+        CouponDto.Response response = couponService.issueCouponByCode(code, userId);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(JsonBody.of(201, "쿠폰 발급 성공", response));
+    }
+
+
 }

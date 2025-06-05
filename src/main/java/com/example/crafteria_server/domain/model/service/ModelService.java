@@ -1,7 +1,11 @@
 package com.example.crafteria_server.domain.model.service;
 
+import com.example.crafteria_server.domain.coupon.entity.Coupon;
+import com.example.crafteria_server.domain.coupon.repository.CouponRepository;
+import com.example.crafteria_server.domain.coupon.service.CouponService;
 import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.domain.file.service.FileService;
+import com.example.crafteria_server.domain.model.dto.ModelPurchaseRequest;
 import com.example.crafteria_server.domain.model.dto.UserModelDto;
 import com.example.crafteria_server.domain.model.entity.Model;
 import com.example.crafteria_server.domain.model.entity.ModelPurchase;
@@ -36,8 +40,11 @@ public class ModelService {
     private final UserRepository userRepository;
     private final AuthorRepository authorRepository;
     private final ModelPurchaseRepository modelPurchaseRepository;
+    private final CouponRepository couponRepository;
     private final FileService fileService;
     private final UserService userService;
+    private final CouponService couponService;
+
 
     public List<UserModelDto.ModelResponse> getPopularList(int page, Optional<Long> userId) {
         Pageable pageable = PageRequest.of(page, 10);
@@ -243,6 +250,73 @@ public class ModelService {
 
         model.setDeleted(true);
         modelRepository.save(model);
+    }
+
+    public UserModelDto.ModelResponse purchaseModelWithCoupon(ModelPurchaseRequest request) {
+        User user = userRepository.findById(request.getUserId()).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+
+        Model model = modelRepository.findById(request.getModelId()).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "모델을 찾을 수 없습니다."));
+
+        if (model.getAuthor().getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "자신이 등록한 도면은 구매할 수 없습니다.");
+        }
+
+        modelPurchaseRepository.findByUserIdAndModelIdAndVerifiedTrue(user.getId(), model.getId()).ifPresent(p -> {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 구매한 모델입니다.");
+        });
+
+        int originalPrice = (int) model.getPrice();
+        int finalPrice = originalPrice;
+
+        // 쿠폰이 있을 경우 할인 적용
+        Coupon appliedCoupon = null;
+        if (request.getCouponId() != null) {
+            appliedCoupon = couponService.validateUsableCoupon(request.getCouponId(), user.getId());
+
+            int discount = (originalPrice * appliedCoupon.getDiscountRate()) / 100;
+            discount = Math.min(discount, appliedCoupon.getMaxDiscountAmount());
+
+            finalPrice = originalPrice - discount;
+
+            // 쿠폰 사용 처리
+            appliedCoupon.setUsed(true);
+            couponRepository.save(appliedCoupon);
+        }
+
+        ModelPurchase purchase = ModelPurchase.builder()
+                .user(user)
+                .model(model)
+                .paymentId(finalPrice > 0 ? UUID.randomUUID().toString() : null)
+                .verified(finalPrice == 0)
+                .build();
+
+        modelPurchaseRepository.save(purchase);
+
+        // 다운로드 수 증가
+        model.setDownloadCount(model.getDownloadCount() + 1);
+        modelRepository.save(model);
+
+        // 유저 구매 기록 업데이트
+        user.setTotalPurchaseCount(user.getTotalPurchaseCount() + 1);
+        user.setTotalPurchaseAmount(user.getTotalPurchaseAmount() + finalPrice);
+        userService.updateUserLevel(user);
+        userRepository.save(user);
+
+        // 판매자 업데이트
+        User seller = model.getAuthor().getUser();
+        seller.setTotalSalesCount(seller.getTotalSalesCount() + 1);
+        seller.setTotalSalesAmount(seller.getTotalSalesAmount() + finalPrice);
+        userService.updateUserLevel(seller);
+        userRepository.save(seller);
+
+        log.info("[도면 구매 완료] 구매자: {}, 판매자: {}, 원가: {}, 최종가: {}, 쿠폰ID: {}, 할인율: {}%",
+                user.getUsername(), seller.getUsername(), originalPrice, finalPrice,
+                appliedCoupon != null ? appliedCoupon.getId() : "없음",
+                appliedCoupon != null ? appliedCoupon.getDiscountRate() : 0);
+
+        return UserModelDto.ModelResponse.from(purchase, model.isDownloadable());
     }
 }
 

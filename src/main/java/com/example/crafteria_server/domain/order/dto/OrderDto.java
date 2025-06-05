@@ -1,5 +1,7 @@
 package com.example.crafteria_server.domain.order.dto;
 
+import com.example.crafteria_server.domain.delivery.dto.DeliveryDto;
+import com.example.crafteria_server.domain.delivery.entity.Delivery;
 import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.domain.order.entity.Order;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -72,7 +74,11 @@ public class OrderDto {
         @Schema(description = "주문 날짜", example = "2023-01-15T12:34:56")
         private LocalDateTime orderDate; // 주문 날짜 필드 추가
 
+        @Schema(description = "배송 정보", example = "배송 정보")
+        private DeliveryDto.DeliveryResponse delivery;
+
         public static OrderResponse from(Order order) {
+            Delivery delivery = order.getDelivery();
             return OrderResponse.builder()
                     .orderId(order.getId())
                     .userId(order.getUser().getId())
@@ -99,6 +105,7 @@ public class OrderDto {
                                     .build())
                             .collect(Collectors.toList()))
                     .orderDate(order.getCreateDate())
+                    .delivery(delivery != null ? DeliveryDto.DeliveryResponse.from(delivery) : null)
                     .build();
         }
     }
