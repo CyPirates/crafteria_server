@@ -151,6 +151,9 @@ public class OrderDto {
         @Schema(description = "특별 요청 사항", example = "부재시 경비실에 맡겨주세요")
         private String specialRequest;
 
+        @Schema(description = "사용할 쿠폰 ID", example = "1")
+        private Long couponId;
+
     }
 
     @Getter

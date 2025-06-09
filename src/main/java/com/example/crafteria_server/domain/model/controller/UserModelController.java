@@ -1,5 +1,6 @@
 package com.example.crafteria_server.domain.model.controller;
 
+import com.example.crafteria_server.domain.model.dto.ModelPurchaseRequest;
 import com.example.crafteria_server.domain.model.dto.UserModelDto;
 import com.example.crafteria_server.domain.model.service.ModelService;
 import com.example.crafteria_server.global.response.JsonBody;
@@ -9,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -49,7 +51,7 @@ public class UserModelController {
         return JsonBody.of(200, "성공", modelService.getMyDownloadedModelList(page, principalDetails.getUserId()));
     }
 
-    @PostMapping("/purchase/{modelId}")
+   /*@PostMapping("/purchase/{modelId}")
     @Operation(summary = "도면 구매", description = "도면을 구매합니다.")
     public JsonBody<UserModelDto.ModelResponse> purchaseModel(@AuthenticationPrincipal PrincipalDetails principalDetails, @PathVariable Long modelId) {
         if (principalDetails == null) {
@@ -57,5 +59,16 @@ public class UserModelController {
         }
 
         return JsonBody.of(200, "성공", modelService.purchaseModel(principalDetails.getUserId(), modelId));
+    }*/
+
+    @PostMapping("/purchase/{modelId}/coupon")
+    public ResponseEntity<JsonBody<UserModelDto.ModelResponse>> purchaseModelWithCoupon(
+            @AuthenticationPrincipal PrincipalDetails principal,
+            @RequestBody ModelPurchaseRequest request) {
+
+        Long userId = principal.getUser().getId();
+        UserModelDto.ModelResponse response = modelService.purchaseModelWithCoupon(userId, request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(JsonBody.of(201, "도면 구매 성공", response));
     }
 }

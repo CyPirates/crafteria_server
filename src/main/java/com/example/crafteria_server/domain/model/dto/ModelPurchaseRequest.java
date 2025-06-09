@@ -10,7 +10,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ModelPurchaseRequest {
-    private Long userId;
     private Long modelId;
     private Long couponId; // nullable (쿠폰 없을 경우 null)
 }
