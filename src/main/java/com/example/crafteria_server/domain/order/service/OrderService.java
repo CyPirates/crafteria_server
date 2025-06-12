@@ -1,10 +1,6 @@
 package com.example.crafteria_server.domain.order.service;
 
 
-import com.example.crafteria_server.domain.coupon.entity.Coupon;
-import com.example.crafteria_server.domain.coupon.entity.CouponType;
-import com.example.crafteria_server.domain.coupon.repository.CouponRepository;
-import com.example.crafteria_server.domain.coupon.service.CouponService;
 import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.domain.file.service.FileService;
 import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
@@ -51,8 +47,6 @@ public class OrderService {
     private final ManufacturerRepository manufacturerRepository;  // 추가
     private final TechnologyRepository technologyRepository;  // 추가
     private final UserService userService;
-    private final CouponService couponService;
-    private final CouponRepository couponRepository;
 
     public List<OrderDto.OrderResponse> getMyOrderList(Long userId, int page) {
         PageRequest pageable = PageRequest.of(page, 10);
@@ -70,28 +64,11 @@ public class OrderService {
     }
 
     public OrderDto.OrderResponse createOrder(Long userId, OrderDto.OrderRequest request, List<MultipartFile> files) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
-        Manufacturer manufacturer = manufacturerRepository.findById(request.getManufacturerId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조사를 찾을 수 없습니다."));
+        User user = userRepository.findById(userId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+        Manufacturer manufacturer = manufacturerRepository.findById(request.getManufacturerId()).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "제조사를 찾을 수 없습니다."));
 
-        long originalPrice = request.getPurchasePrice();
-        long finalPrice = originalPrice;
-
-        // ✅ 쿠폰 적용
-        Coupon appliedCoupon = null;
-        if (request.getCouponId() != null) {
-            appliedCoupon = couponService.validateOrderCoupon(request.getCouponId(), userId);
-
-            long discount = (originalPrice * appliedCoupon.getDiscountRate()) / 100;
-            discount = Math.min(discount, appliedCoupon.getMaxDiscountAmount());
-            finalPrice -= discount;
-
-            // ✅ 쿠폰 사용 처리
-            couponService.markCouponAsUsed(appliedCoupon.getId(), userId);
-        }
-
-        // ✅ 주문 객체 생성
         String paymentId = UUID.randomUUID().toString();
         Order order = Order.builder()
                 .user(user)
@@ -101,19 +78,16 @@ public class OrderService {
                 .recipientPhone(request.getRecipientPhone())
                 .recipientEmail(request.getRecipientEmail())
                 .specialRequest(request.getSpecialRequest())
-                .purchasePrice(finalPrice)
+                .purchasePrice(request.getPurchasePrice())
                 .status(OrderStatus.ORDERED)
                 .paymentId(paymentId)
                 .build();
 
-        // ✅ 주문 항목 생성
         List<OrderItem> orderItems = new ArrayList<>();
         for (int i = 0; i < request.getOrderItems().size(); i++) {
             OrderDto.OrderItemDto itemDto = request.getOrderItems().get(i);
             MultipartFile file = files.get(i);
-
             File savedFile = fileService.saveModel(file);
-
             Technology technology = technologyRepository.findById(itemDto.getTechnologyId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "기술 정보를 찾을 수 없습니다."));
 
@@ -127,29 +101,32 @@ public class OrderService {
                     .magnification(itemDto.getMagnification())
                     .quantity(itemDto.getQuantity())
                     .build();
-
             orderItems.add(orderItem);
         }
 
         order.setOrderItems(orderItems);
         orderRepository.save(order);
 
-        // ✅ 유저 구매 통계 업데이트
+        // 구매자 유저 레벨 업데이트
         user.setTotalPurchaseCount(user.getTotalPurchaseCount() + 1);
-        user.setTotalPurchaseAmount(user.getTotalPurchaseAmount() + finalPrice);
+        user.setTotalPurchaseAmount(user.getTotalPurchaseAmount() + order.getPurchasePrice());
         userService.updateUserLevel(user);
         userRepository.save(user);
 
-        // ✅ 제조사 판매 통계 업데이트
+        // 판매자 레벨 업데이트
         User seller = manufacturer.getDashboardUser();
         seller.setTotalPrintedCount(seller.getTotalPrintedCount() + 1);
-        seller.setTotalPrintedAmount(seller.getTotalPrintedAmount() + finalPrice);
+        seller.setTotalPrintedAmount(seller.getTotalPrintedAmount() + order.getPurchasePrice());
         userService.updateUserLevel(seller);
         userRepository.save(seller);
 
-        log.info("[주문 생성] 사용자: {}, 주문금액(할인적용): {}, 제조사: {}, 주문 항목 수: {}, 결제 ID: {}, 쿠폰 ID: {}",
-                user.getUsername(), finalPrice, manufacturer.getName(), orderItems.size(), paymentId,
-                appliedCoupon != null ? appliedCoupon.getId() : "없음");
+        log.info("[주문 생성] 사용자: {}, 수령인: {}, 주문금액: {}, 주문항목수: {}, 제조사: {}, 결제ID: {}",
+                user.getUsername(),
+                order.getRecipientName(),
+                order.getPurchasePrice(),
+                orderItems.size(),
+                manufacturer.getName(),
+                paymentId);
 
         return OrderDto.OrderResponse.from(order);
     }
