@@ -1,7 +1,6 @@
 package com.example.crafteria_server.domain.model.service;
 
 import com.example.crafteria_server.domain.coupon.entity.Coupon;
-import com.example.crafteria_server.domain.coupon.entity.CouponType;
 import com.example.crafteria_server.domain.coupon.repository.CouponRepository;
 import com.example.crafteria_server.domain.coupon.service.CouponService;
 import com.example.crafteria_server.domain.file.entity.File;
@@ -146,7 +145,7 @@ public class ModelService {
                 .collect(Collectors.toList());
     }
 
-    /*public UserModelDto.ModelResponse purchaseModel(Long userId, Long modelId) {
+    public UserModelDto.ModelResponse purchaseModel(Long userId, Long modelId) {
         User user = userRepository.findById(userId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
         Model model = modelRepository.findById(modelId).orElseThrow(() ->
@@ -187,13 +186,11 @@ public class ModelService {
         userService.updateUserLevel(seller);
         userRepository.save(seller);
 
-
-
         log.info("[도면 구매 처리] 구매자: {}, 판매자: {}, 도면ID: {}, 가격: {}, 다운로드 가능: {}",
                 user.getUsername(), seller.getUsername(), modelId, model.getPrice(), model.isDownloadable());
 
         return UserModelDto.ModelResponse.from(savedPurchase, model.isDownloadable());
-    }*/
+    }
 
     public List<UserModelDto.ModelResponse> getMyUploadedModelList(int page, Long userId) {
         Pageable pageable = PageRequest.of(page, 10);
@@ -255,33 +252,37 @@ public class ModelService {
         modelRepository.save(model);
     }
 
-    public UserModelDto.ModelResponse purchaseModelWithCoupon(Long userId, ModelPurchaseRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+    public UserModelDto.ModelResponse purchaseModelWithCoupon(ModelPurchaseRequest request) {
+        User user = userRepository.findById(request.getUserId()).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
 
-        Model model = modelRepository.findById(request.getModelId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "모델을 찾을 수 없습니다."));
+        Model model = modelRepository.findById(request.getModelId()).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "모델을 찾을 수 없습니다."));
 
         if (model.getAuthor().getUser().getId().equals(user.getId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "자신이 등록한 도면은 구매할 수 없습니다.");
         }
 
-        modelPurchaseRepository.findByUserIdAndModelIdAndVerifiedTrue(user.getId(), model.getId())
-                .ifPresent(p -> {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 구매한 모델입니다.");
-                });
+        modelPurchaseRepository.findByUserIdAndModelIdAndVerifiedTrue(user.getId(), model.getId()).ifPresent(p -> {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 구매한 모델입니다.");
+        });
 
         int originalPrice = (int) model.getPrice();
         int finalPrice = originalPrice;
 
+        // 쿠폰이 있을 경우 할인 적용
         Coupon appliedCoupon = null;
         if (request.getCouponId() != null) {
-            appliedCoupon = couponService.validateModelCoupon(request.getCouponId(), userId);
+            appliedCoupon = couponService.validateUsableCoupon(request.getCouponId(), user.getId());
 
             int discount = (originalPrice * appliedCoupon.getDiscountRate()) / 100;
             discount = Math.min(discount, appliedCoupon.getMaxDiscountAmount());
 
             finalPrice = originalPrice - discount;
+
+            // 쿠폰 사용 처리
+            appliedCoupon.setUsed(true);
+            couponRepository.save(appliedCoupon);
         }
 
         ModelPurchase purchase = ModelPurchase.builder()
@@ -293,18 +294,17 @@ public class ModelService {
 
         modelPurchaseRepository.save(purchase);
 
-        if (appliedCoupon != null) {
-            couponService.markCouponAsUsed(appliedCoupon.getId(), userId);
-        }
-
+        // 다운로드 수 증가
         model.setDownloadCount(model.getDownloadCount() + 1);
         modelRepository.save(model);
 
+        // 유저 구매 기록 업데이트
         user.setTotalPurchaseCount(user.getTotalPurchaseCount() + 1);
         user.setTotalPurchaseAmount(user.getTotalPurchaseAmount() + finalPrice);
         userService.updateUserLevel(user);
         userRepository.save(user);
 
+        // 판매자 업데이트
         User seller = model.getAuthor().getUser();
         seller.setTotalSalesCount(seller.getTotalSalesCount() + 1);
         seller.setTotalSalesAmount(seller.getTotalSalesAmount() + finalPrice);
