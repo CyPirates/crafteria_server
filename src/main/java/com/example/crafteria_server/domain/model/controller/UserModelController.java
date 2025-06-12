@@ -61,7 +61,7 @@ public class UserModelController {
         return JsonBody.of(200, "성공", modelService.purchaseModel(principalDetails.getUserId(), modelId));
     }*/
 
-    @PostMapping("/purchase/{modelId}")
+    @PostMapping("/purchase/{modelId}/coupon")
     public ResponseEntity<JsonBody<UserModelDto.ModelResponse>> purchaseModelWithCoupon(
             @AuthenticationPrincipal PrincipalDetails principal,
             @RequestBody ModelPurchaseRequest request) {
