@@ -154,28 +154,33 @@ public class UserService implements UserDetailsService {
         int newSellerLevel = 0;
 
         // 일반 사용자 레벨 기준
-        if (user.getTotalPurchaseAmount() >= 10000 || user.getTotalPrintedAmount() >= 5000) {
+        if (user.getTotalPurchaseAmount() >= 1000000 || user.getTotalPrintedAmount() >= 100) {
             newUserLevel = 5;
-        } else if (user.getTotalPurchaseAmount() >= 5000 || user.getTotalPrintedAmount() >= 2500) {
+        } else if (user.getTotalPurchaseAmount() >= 750000 || user.getTotalPrintedAmount() >= 75) {
             newUserLevel = 4;
-        } else if (user.getTotalPurchaseAmount() >= 2500 || user.getTotalPrintedAmount() >= 1250) {
+        } else if (user.getTotalPurchaseAmount() >= 500000 || user.getTotalPrintedAmount() >= 50) {
             newUserLevel = 3;
-        } else if (user.getTotalPurchaseAmount() >= 1250 || user.getTotalPrintedAmount() >= 625) {
+        } else if (user.getTotalPurchaseAmount() >= 100000  || user.getTotalPrintedAmount() >= 10) {
             newUserLevel = 2;
-        } else if (user.getTotalPurchaseAmount() >= 1 || user.getTotalPrintedAmount() >= 1) {
+        } else if (user.getTotalPurchaseAmount() >= 1000 || user.getTotalPrintedAmount() >= 1) {
             newUserLevel = 1;
         }
 
         // 판매자 레벨 기준
-        if (user.getTotalSalesAmount() >= 100000 || user.getTotalUploadCount() >= 100) {
+        if (user.getTotalSalesAmount() >= 10000000 || user.getTotalPrintedAmount() >= 50000000 ||
+                user.getTotalPrintedCount() >= 1000 || user.getTotalSalesCount() >= 1000 || user.getTotalUploadCount() >=200 ) {
             newSellerLevel = 5;
-        } else if (user.getTotalSalesAmount() >= 50000 || user.getTotalUploadCount() >= 50) {
+        } else if (user.getTotalSalesAmount() >= 5000000 || user.getTotalPrintedAmount() >= 25000000 ||
+                user.getTotalPrintedCount() >= 500 || user.getTotalSalesCount() >= 500 || user.getTotalUploadCount() >=100) {
             newSellerLevel = 4;
-        } else if (user.getTotalSalesAmount() >= 25000 || user.getTotalUploadCount() >= 25) {
+        } else if (user.getTotalSalesAmount() >= 2500000 || user.getTotalPrintedAmount() >= 12500000 ||
+                user.getTotalPrintedCount() >= 250 || user.getTotalSalesCount() >= 250 || user.getTotalUploadCount() >=50) {
             newSellerLevel = 3;
-        } else if (user.getTotalSalesAmount() >= 12500 || user.getTotalUploadCount() >= 10) {
+        } else if (user.getTotalSalesAmount() >= 1000000 || user.getTotalPrintedAmount() >= 1000000 ||
+                user.getTotalPrintedCount() >= 100 || user.getTotalSalesCount() >= 100 || user.getTotalUploadCount() >=25) {
             newSellerLevel = 2;
-        } else if (user.getTotalSalesAmount() >= 1 || user.getTotalUploadCount() >= 1) {
+        } else if (user.getTotalSalesAmount() >= 1000 || user.getTotalPrintedAmount() >= 1000 ||
+                user.getTotalPrintedCount() >= 1 || user.getTotalSalesCount() >= 1 || user.getTotalUploadCount() >=1) {
             newSellerLevel = 1;
         }
 
