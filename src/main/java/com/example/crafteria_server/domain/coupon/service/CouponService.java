@@ -17,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,7 +44,6 @@ public class CouponService {
                 .collect(Collectors.toList());
     }
 
-    // 쿠폰 발급 (코드 입력 방식)
     public CouponDto.Response issueCouponByCode(String code, Long userId) {
         CouponTemplate template = couponTemplateRepository.findByCode(code)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "해당 쿠폰 코드는 존재하지 않습니다."));
@@ -64,11 +64,17 @@ public class CouponService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
 
+        // ✅ 고유한 쿠폰 코드 생성
+        String uniqueCouponCode;
+        do {
+            uniqueCouponCode = template.getCode() + "-" + UUID.randomUUID().toString().substring(0, 8);
+        } while (couponRepository.existsByCode(uniqueCouponCode));
+
         Coupon coupon = Coupon.builder()
                 .user(user)
                 .template(template)
                 .name(template.getName())
-                .code(template.getCode())
+                .code(uniqueCouponCode) // <- 고유한 코드 사용
                 .discountRate(template.getDiscountRate())
                 .maxDiscountAmount(template.getMaxDiscountAmount())
                 .issuedAt(LocalDateTime.now())
@@ -145,6 +151,7 @@ public class CouponService {
                 .issuedAt(coupon.getIssuedAt())
                 .expiredAt(coupon.getExpiredAt())
                 .used(coupon.isUsed())
+                .type(coupon.getType())
                 .build();
     }
 
