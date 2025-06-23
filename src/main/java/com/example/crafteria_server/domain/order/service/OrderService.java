@@ -76,23 +76,22 @@ public class OrderService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조사를 찾을 수 없습니다."));
 
         long originalPrice = request.getPurchasePrice();
-        long finalPrice = originalPrice;
-
-        // ✅ 쿠폰 적용
+        long discount = 0;
         Coupon appliedCoupon = null;
+
         if (request.getCouponId() != null) {
             appliedCoupon = couponService.validateOrderCoupon(request.getCouponId(), userId);
-
-            long discount = (originalPrice * appliedCoupon.getDiscountRate()) / 100;
+            discount = (originalPrice * appliedCoupon.getDiscountRate()) / 100;
             discount = Math.min(discount, appliedCoupon.getMaxDiscountAmount());
-            finalPrice -= discount;
-
-            // ✅ 쿠폰 사용 처리
-            couponService.markCouponAsUsed(appliedCoupon.getId(), userId);
         }
 
-        // ✅ 주문 객체 생성
+        long discountedPrice = originalPrice - discount;
+        long vat = (long) Math.ceil(discountedPrice * 0.1);
+        long deliveryFee = 3000;
+        long finalPrice = discountedPrice + vat + deliveryFee;
+
         String paymentId = UUID.randomUUID().toString();
+
         Order order = Order.builder()
                 .user(user)
                 .manufacturer(manufacturer)
@@ -103,10 +102,10 @@ public class OrderService {
                 .specialRequest(request.getSpecialRequest())
                 .purchasePrice(finalPrice)
                 .status(OrderStatus.ORDERED)
-                .paymentId(paymentId)
+                .paymentId(finalPrice > 0 ? paymentId : null)
+                .coupon(appliedCoupon) // ✅ 쿠폰 저장만! 사용 처리 X
                 .build();
 
-        // ✅ 주문 항목 생성
         List<OrderItem> orderItems = new ArrayList<>();
         for (int i = 0; i < request.getOrderItems().size(); i++) {
             OrderDto.OrderItemDto itemDto = request.getOrderItems().get(i);
@@ -134,20 +133,11 @@ public class OrderService {
         order.setOrderItems(orderItems);
         orderRepository.save(order);
 
-        // ✅ 유저 구매 통계 업데이트
-        user.setTotalPurchaseCount(user.getTotalPurchaseCount() + 1);
-        user.setTotalPurchaseAmount(user.getTotalPurchaseAmount() + finalPrice);
-        userService.updateUserLevel(user);
-        userRepository.save(user);
+        if (finalPrice == 0 && appliedCoupon != null) {
+            couponService.markCouponAsUsed(appliedCoupon.getId(), userId);
+        }
 
-        // ✅ 제조사 판매 통계 업데이트
-        User seller = manufacturer.getDashboardUser();
-        seller.setTotalPrintedCount(seller.getTotalPrintedCount() + 1);
-        seller.setTotalPrintedAmount(seller.getTotalPrintedAmount() + finalPrice);
-        userService.updateUserLevel(seller);
-        userRepository.save(seller);
-
-        log.info("[주문 생성] 사용자: {}, 주문금액(할인적용): {}, 제조사: {}, 주문 항목 수: {}, 결제 ID: {}, 쿠폰 ID: {}",
+        log.info("[주문 생성] 사용자: {}, 주문금액(할인+VAT+배송): {}, 제조사: {}, 항목 수: {}, 결제 ID: {}, 쿠폰 ID: {}",
                 user.getUsername(), finalPrice, manufacturer.getName(), orderItems.size(), paymentId,
                 appliedCoupon != null ? appliedCoupon.getId() : "없음");
 
