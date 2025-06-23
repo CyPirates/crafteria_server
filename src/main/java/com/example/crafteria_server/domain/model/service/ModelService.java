@@ -272,28 +272,30 @@ public class ModelService {
                 });
 
         int originalPrice = (int) model.getPrice();
-        int finalPrice = originalPrice;
-
+        int discount = 0;
         Coupon appliedCoupon = null;
+
         if (request.getCouponId() != null) {
             appliedCoupon = couponService.validateModelCoupon(request.getCouponId(), userId);
-
-            int discount = (originalPrice * appliedCoupon.getDiscountRate()) / 100;
+            discount = (originalPrice * appliedCoupon.getDiscountRate()) / 100;
             discount = Math.min(discount, appliedCoupon.getMaxDiscountAmount());
-
-            finalPrice = originalPrice - discount;
         }
+
+        int discountedPrice = originalPrice - discount;
+        int vat = (int) Math.ceil(discountedPrice * 0.1);
+        int finalPrice = discountedPrice + vat;
 
         ModelPurchase purchase = ModelPurchase.builder()
                 .user(user)
                 .model(model)
                 .paymentId(finalPrice > 0 ? UUID.randomUUID().toString() : null)
-                .verified(finalPrice == 0)
+                .verified(finalPrice == 0) // 무료일 경우 바로 검증 처리
+                .coupon(appliedCoupon)     // ✅ 쿠폰 저장만! 사용 처리 X
                 .build();
 
         modelPurchaseRepository.save(purchase);
 
-        if (appliedCoupon != null) {
+        if (finalPrice == 0 && appliedCoupon != null) {
             couponService.markCouponAsUsed(appliedCoupon.getId(), userId);
         }
 

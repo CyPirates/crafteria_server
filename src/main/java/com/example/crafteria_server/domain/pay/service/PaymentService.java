@@ -1,5 +1,7 @@
 package com.example.crafteria_server.domain.pay.service;
 
+import com.example.crafteria_server.domain.coupon.entity.Coupon;
+import com.example.crafteria_server.domain.coupon.service.CouponService;
 import com.example.crafteria_server.domain.model.entity.Model;
 import com.example.crafteria_server.domain.model.entity.ModelPurchase;
 import com.example.crafteria_server.domain.model.repository.ModelPurchaseRepository;
@@ -10,6 +12,7 @@ import com.example.crafteria_server.domain.order.repository.OrderRepository;
 import com.example.crafteria_server.domain.pay.dto.PaymentDto;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.domain.user.repository.UserRepository;
+import com.example.crafteria_server.domain.user.service.UserService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +43,8 @@ public class PaymentService {
     private final ModelPurchaseRepository modelPurchaseRepository;
     private final UserRepository userRepository;
     private final RestTemplate restTemplate;
+    private final UserService userService;
+    private final CouponService couponService;
 
     @Value("${portone_api_secret}")
     private String portoneApiSecret;
@@ -51,10 +56,7 @@ public class PaymentService {
 
         PaymentDto.PaymentResponse payment = getPaymentFromPortOne(paymentId);
 
-        log.info("[결제 금액] 주문ID: {}, 결제ID: {}, 결제금액: {}",
-                order.getId(), paymentId, payment.getAmount().getTotal());
-
-
+        log.info("[결제 금액] 주문ID: {}, 결제ID: {}, 결제금액: {}", order.getId(), paymentId, payment.getAmount().getTotal());
 
         BigDecimal basePrice = BigDecimal.valueOf(order.getPurchasePrice());
         BigDecimal vat = basePrice.multiply(BigDecimal.valueOf(0.10)).setScale(0, RoundingMode.CEILING);
@@ -78,6 +80,24 @@ public class PaymentService {
 
         orderRepository.save(order);
 
+        // ✅ 결제 성공 이후 쿠폰 사용 처리
+        if (order.getCoupon() != null) {
+            couponService.markCouponAsUsed(order.getCoupon().getId(), order.getUser().getId());
+        }
+
+        // ✅ 통계 반영
+        User user = order.getUser();
+        user.setTotalPurchaseCount(user.getTotalPurchaseCount() + 1);
+        user.setTotalPurchaseAmount(user.getTotalPurchaseAmount() + order.getPurchasePrice());
+        userService.updateUserLevel(user);
+        userRepository.save(user);
+
+        User seller = order.getManufacturer().getDashboardUser();
+        seller.setTotalPrintedCount(seller.getTotalPrintedCount() + 1);
+        seller.setTotalPrintedAmount(seller.getTotalPrintedAmount() + order.getPurchasePrice());
+        userService.updateUserLevel(seller);
+        userRepository.save(seller);
+
         log.info("[결제 완료] 주문ID: {}, 결제ID: {}, 최종상태: {}", order.getId(), paymentId, order.getStatus());
 
         return new PaymentDto.PaymentResultDto(payment.getStatus(), "결제가 성공적으로 처리되었습니다.");
@@ -85,52 +105,69 @@ public class PaymentService {
 
     // 모델 결제 검증
     public PaymentDto.PaymentResultDto processModelPayment(String paymentId, Long modelId, Long userId) throws Exception {
-        PaymentDto.PaymentResponse payment = getPaymentFromPortOne(paymentId); // ✅ 포트원 API로 결제 내역 조회
+        PaymentDto.PaymentResponse payment = getPaymentFromPortOne(paymentId);
 
-        // 유효하지 않은 결제 ID이면 여기서 Exception 발생
-
-        // 모델 가격 확인
         Model model = modelRepository.findById(modelId)
                 .orElseThrow(() -> new RuntimeException("모델을 찾을 수 없습니다."));
 
-        log.info("[모델 결제 금액] 모델ID: {}, 결제ID: {}, 결제금액: {}",
-                model.getId(), paymentId, payment.getAmount().getTotal());
+        ModelPurchase purchase = modelPurchaseRepository.findByPaymentId(paymentId)
+                .orElseThrow(() -> new RuntimeException("결제 내역과 일치하는 구매 기록이 없습니다."));
 
-        BigDecimal modelPrice = BigDecimal.valueOf(model.getPrice());
-        BigDecimal vat = modelPrice.multiply(BigDecimal.valueOf(0.10)).setScale(0, RoundingMode.CEILING);
-        BigDecimal expectedTotal = modelPrice.add(vat);
-
-        if (payment.getAmount().getTotal().compareTo(expectedTotal) != 0) {
-            throw new Exception("결제 금액이 모델 가격(VAT 포함)과 일치하지 않습니다.");
+        if (purchase.isVerified()) {
+            throw new Exception("이미 검증 완료된 결제입니다.");
         }
 
-        Optional<ModelPurchase> existingPurchaseOpt = modelPurchaseRepository.findByPaymentId(paymentId);
-        if (existingPurchaseOpt.isPresent()) {
-            ModelPurchase existingPurchase = existingPurchaseOpt.get();
-            if (existingPurchase.isVerified()) {
-                throw new Exception("이미 검증 완료된 결제입니다.");
-            }
-
-            // ✅ 검증 성공한 경우에만 verified true로 변경
-            existingPurchase.setVerified(true);
-            modelPurchaseRepository.save(existingPurchase);
-
-            return new PaymentDto.PaymentResultDto("VERIFIED", "기존 결제 검증 완료 처리되었습니다.");
+        // ✅ 최종 가격 기준 검증 (VAT 포함 후 할인 적용 완료된 금액)
+        int finalExpectedPrice = calculateModelFinalPrice(model, purchase.getCoupon()); // ✳️ 아래에 별도 메서드로 분리
+        if (payment.getAmount().getTotal().compareTo(BigDecimal.valueOf(finalExpectedPrice)) != 0) {
+            throw new Exception("결제 금액이 모델 최종 가격(VAT 포함, 할인 적용)과 일치하지 않습니다.");
         }
 
-        // 없는 결제건이면 새로 생성
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
-
-        ModelPurchase purchase = ModelPurchase.builder()
-                .user(user)
-                .model(model)
-                .paymentId(paymentId)
-                .verified(true)
-                .build();
-
+        // ✅ 결제 검증 완료 처리
+        purchase.setVerified(true);
         modelPurchaseRepository.save(purchase);
-        return new PaymentDto.PaymentResultDto(payment.getStatus(), "모델 결제가 성공적으로 처리되었습니다.");
+
+        // ✅ 쿠폰 사용 처리
+        if (purchase.getCoupon() != null) {
+            couponService.markCouponAsUsed(purchase.getCoupon().getId(), userId);
+        }
+
+        // ✅ 다운로드 수 증가
+        model.setDownloadCount(model.getDownloadCount() + 1);
+        modelRepository.save(model);
+
+        // ✅ 통계 반영
+        User buyer = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+        buyer.setTotalPurchaseCount(buyer.getTotalPurchaseCount() + 1);
+        buyer.setTotalPurchaseAmount(buyer.getTotalPurchaseAmount() + finalExpectedPrice);
+        userService.updateUserLevel(buyer);
+        userRepository.save(buyer);
+
+        User seller = model.getAuthor().getUser();
+        seller.setTotalSalesCount(seller.getTotalSalesCount() + 1);
+        seller.setTotalSalesAmount(seller.getTotalSalesAmount() + finalExpectedPrice);
+        userService.updateUserLevel(seller);
+        userRepository.save(seller);
+
+        log.info("[결제 완료 및 검증 처리] paymentId={}, modelId={}, userId={}, 최종가격={}", paymentId, modelId, userId, finalExpectedPrice);
+
+        return new PaymentDto.PaymentResultDto(payment.getStatus(), "모델 결제가 성공적으로 검증 및 처리되었습니다.");
+    }
+
+    // ✳️ 할인 + VAT 포함 최종가격 계산 유틸
+    private int calculateModelFinalPrice(Model model, Coupon coupon) {
+        int originalPrice = (int) model.getPrice();
+        int discount = 0;
+
+        if (coupon != null) {
+            discount = (originalPrice * coupon.getDiscountRate()) / 100;
+            discount = Math.min(discount, coupon.getMaxDiscountAmount());
+        }
+
+        int discountedPrice = originalPrice - discount;
+        int vat = (int) Math.ceil(discountedPrice * 0.1);
+        return discountedPrice + vat;
     }
 
     private PaymentDto.PaymentResponse getPaymentFromPortOne(String paymentId) throws Exception {

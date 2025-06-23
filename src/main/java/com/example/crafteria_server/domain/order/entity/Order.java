@@ -1,5 +1,6 @@
 package com.example.crafteria_server.domain.order.entity;
 
+import com.example.crafteria_server.domain.coupon.entity.Coupon;
 import com.example.crafteria_server.domain.delivery.entity.Delivery;
 import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
@@ -71,6 +72,10 @@ public class Order extends BaseEntity {
 
     @OneToOne(mappedBy = "order", fetch = FetchType.LAZY)
     private Delivery delivery;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coupon_id")
+    private Coupon coupon;
 
 
 }
