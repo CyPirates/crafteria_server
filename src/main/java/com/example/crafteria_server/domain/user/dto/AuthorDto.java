@@ -1,6 +1,7 @@
 package com.example.crafteria_server.domain.user.dto;
 
 import com.example.crafteria_server.domain.user.entity.Author;
+import com.example.crafteria_server.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -40,9 +41,15 @@ public class AuthorDto {
 
         public static AuthorResponse from(Author author) {
             String profileImageUrl = author.getProfileImage() == null ? null : author.getProfileImage().getUrl();
+
+            User user = author.getUser();
+            String displayName = (user.getUsername() != null && !user.getUsername().isBlank())
+                    ? user.getUsername()
+                    : user.getRealname();
+
             return AuthorResponse.builder()
                     .id(author.getId())
-                    .name(author.getRealname())
+                    .name(displayName)  //  username 또는 realname
                     .rating(author.getRating())
                     .introduction(author.getIntroduction())
                     .modelCount(author.getModelCount())
