@@ -110,6 +110,14 @@ public class PaymentService {
         Model model = modelRepository.findById(modelId)
                 .orElseThrow(() -> new RuntimeException("모델을 찾을 수 없습니다."));
 
+        BigDecimal modelPrice = BigDecimal.valueOf(model.getPrice());
+        BigDecimal vat = modelPrice.multiply(BigDecimal.valueOf(0.10)).setScale(0, RoundingMode.CEILING);
+        BigDecimal expectedTotal = modelPrice.add(vat);
+
+        if (payment.getAmount().getTotal().compareTo(expectedTotal) != 0) {
+            throw new Exception("결제 금액이 모델 가격(VAT 포함)과 일치하지 않습니다.");
+        }
+
         ModelPurchase purchase = modelPurchaseRepository.findByPaymentId(paymentId)
                 .orElseThrow(() -> new RuntimeException("결제 내역과 일치하는 구매 기록이 없습니다."));
 
@@ -117,40 +125,36 @@ public class PaymentService {
             throw new Exception("이미 검증 완료된 결제입니다.");
         }
 
-        // ✅ 최종 가격 기준 검증 (VAT 포함 후 할인 적용 완료된 금액)
-        int finalExpectedPrice = calculateModelFinalPrice(model, purchase.getCoupon()); // ✳️ 아래에 별도 메서드로 분리
-        if (payment.getAmount().getTotal().compareTo(BigDecimal.valueOf(finalExpectedPrice)) != 0) {
-            throw new Exception("결제 금액이 모델 최종 가격(VAT 포함, 할인 적용)과 일치하지 않습니다.");
-        }
-
-        // ✅ 결제 검증 완료 처리
+        // 결제 검증 성공 처리
         purchase.setVerified(true);
         modelPurchaseRepository.save(purchase);
+
+        // ✅ 다운로드 수 증가
+        Model purchasedModel = purchase.getModel();
+        purchasedModel.setDownloadCount(purchasedModel.getDownloadCount() + 1);
+        modelRepository.save(purchasedModel);
 
         // ✅ 쿠폰 사용 처리
         if (purchase.getCoupon() != null) {
             couponService.markCouponAsUsed(purchase.getCoupon().getId(), userId);
         }
 
-        // ✅ 다운로드 수 증가
-        model.setDownloadCount(model.getDownloadCount() + 1);
-        modelRepository.save(model);
-
-        // ✅ 통계 반영
+        // ✅ 구매자 통계 처리
         User buyer = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
         buyer.setTotalPurchaseCount(buyer.getTotalPurchaseCount() + 1);
-        buyer.setTotalPurchaseAmount(buyer.getTotalPurchaseAmount() + finalExpectedPrice);
+        buyer.setTotalPurchaseAmount(buyer.getTotalPurchaseAmount() + purchasedModel.getPrice());
         userService.updateUserLevel(buyer);
         userRepository.save(buyer);
 
-        User seller = model.getAuthor().getUser();
+        // ✅ 판매자 통계 처리
+        User seller = purchasedModel.getAuthor().getUser();
         seller.setTotalSalesCount(seller.getTotalSalesCount() + 1);
-        seller.setTotalSalesAmount(seller.getTotalSalesAmount() + finalExpectedPrice);
+        seller.setTotalSalesAmount(seller.getTotalSalesAmount() + purchasedModel.getPrice());
         userService.updateUserLevel(seller);
         userRepository.save(seller);
 
-        log.info("[결제 완료 및 검증 처리] paymentId={}, modelId={}, userId={}, 최종가격={}", paymentId, modelId, userId, finalExpectedPrice);
+        log.info("[결제 검증 완료] 모델ID: {}, 구매자ID: {}, 결제ID: {}, 최종금액: {}", modelId, userId, paymentId, purchasedModel.getPrice());
 
         return new PaymentDto.PaymentResultDto(payment.getStatus(), "모델 결제가 성공적으로 검증 및 처리되었습니다.");
     }

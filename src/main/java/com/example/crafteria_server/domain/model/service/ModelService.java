@@ -256,6 +256,8 @@ public class ModelService {
     }
 
     public UserModelDto.ModelResponse purchaseModelWithCoupon(Long userId, ModelPurchaseRequest request) {
+        log.info("[도면 구매 요청 시작] userId={}, modelId={}, couponId={}", userId, request.getModelId(), request.getCouponId());
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
 
@@ -279,44 +281,52 @@ public class ModelService {
             appliedCoupon = couponService.validateModelCoupon(request.getCouponId(), userId);
             discount = (originalPrice * appliedCoupon.getDiscountRate()) / 100;
             discount = Math.min(discount, appliedCoupon.getMaxDiscountAmount());
+
+            log.info("[쿠폰 적용] couponId={}, 할인율={}%, 할인금액={}", appliedCoupon.getId(), appliedCoupon.getDiscountRate(), discount);
+        } else {
+            log.info("[쿠폰 미적용] 원가만 결제 진행");
         }
 
         int discountedPrice = originalPrice - discount;
         int vat = (int) Math.ceil(discountedPrice * 0.1);
         int finalPrice = discountedPrice + vat;
 
+        log.info("[결제 계산] 원가: {}, 할인 후: {}, VAT: {}, 최종 결제 금액: {}", originalPrice, discountedPrice, vat, finalPrice);
+
         ModelPurchase purchase = ModelPurchase.builder()
                 .user(user)
                 .model(model)
                 .paymentId(finalPrice > 0 ? UUID.randomUUID().toString() : null)
-                .verified(finalPrice == 0) // 무료일 경우 바로 검증 처리
-                .coupon(appliedCoupon)     // ✅ 쿠폰 저장만! 사용 처리 X
+                .verified(finalPrice == 0)
+                .coupon(appliedCoupon)
                 .build();
 
         modelPurchaseRepository.save(purchase);
 
-        if (finalPrice == 0 && appliedCoupon != null) {
-            couponService.markCouponAsUsed(appliedCoupon.getId(), userId);
+        if (finalPrice == 0) {
+            log.info("[무료 결제] couponId={}, userId={} - 후처리 바로 실행", appliedCoupon != null ? appliedCoupon.getId() : "없음", userId);
+
+            if (appliedCoupon != null) {
+                couponService.markCouponAsUsed(appliedCoupon.getId(), userId);
+            }
+
+            model.setDownloadCount(model.getDownloadCount() + 1);
+            modelRepository.save(model);
+
+            user.setTotalPurchaseCount(user.getTotalPurchaseCount() + 1);
+            user.setTotalPurchaseAmount(user.getTotalPurchaseAmount() + finalPrice);
+            userService.updateUserLevel(user);
+            userRepository.save(user);
+
+            User seller = model.getAuthor().getUser();
+            seller.setTotalSalesCount(seller.getTotalSalesCount() + 1);
+            seller.setTotalSalesAmount(seller.getTotalSalesAmount() + finalPrice);
+            userService.updateUserLevel(seller);
+            userRepository.save(seller);
         }
 
-        model.setDownloadCount(model.getDownloadCount() + 1);
-        modelRepository.save(model);
-
-        user.setTotalPurchaseCount(user.getTotalPurchaseCount() + 1);
-        user.setTotalPurchaseAmount(user.getTotalPurchaseAmount() + finalPrice);
-        userService.updateUserLevel(user);
-        userRepository.save(user);
-
-        User seller = model.getAuthor().getUser();
-        seller.setTotalSalesCount(seller.getTotalSalesCount() + 1);
-        seller.setTotalSalesAmount(seller.getTotalSalesAmount() + finalPrice);
-        userService.updateUserLevel(seller);
-        userRepository.save(seller);
-
-        log.info("[도면 구매 완료] 구매자: {}, 판매자: {}, 원가: {}, 최종가: {}, 쿠폰ID: {}, 할인율: {}%",
-                user.getUsername(), seller.getUsername(), originalPrice, finalPrice,
-                appliedCoupon != null ? appliedCoupon.getId() : "없음",
-                appliedCoupon != null ? appliedCoupon.getDiscountRate() : 0);
+        log.info("[도면 구매 요청 완료] userId={}, modelId={}, paymentId={}, verified={}",
+                userId, model.getId(), purchase.getPaymentId(), purchase.isVerified());
 
         return UserModelDto.ModelResponse.from(purchase, model.isDownloadable());
     }
