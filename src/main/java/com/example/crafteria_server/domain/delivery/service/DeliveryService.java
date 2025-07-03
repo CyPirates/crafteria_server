@@ -117,4 +117,18 @@ public class DeliveryService {
                 .map(DeliveryDto.DeliveryResponse::from)
                 .collect(Collectors.toList());
     }
+
+    public List<DeliveryDto.DeliveryResponse> getAllDeliveries() {
+        List<Delivery> deliveries = deliveryRepository.findAll();
+        return deliveries.stream()
+                .map(DeliveryDto.DeliveryResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    public List<DeliveryDto.DeliveryResponse> getDeliveriesForUserOrders(User user) {
+        List<Delivery> deliveries = deliveryRepository.findAllByOrder_User_Id(user.getId());
+        return deliveries.stream()
+                .map(DeliveryDto.DeliveryResponse::from)
+                .collect(Collectors.toList());
+    }
 }
