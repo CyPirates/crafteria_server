@@ -330,5 +330,15 @@ public class ModelService {
 
         return UserModelDto.ModelResponse.from(purchase, model.isDownloadable());
     }
+
+    public void forceDeleteModelByAdmin(Long modelId) {
+        Model model = modelRepository.findById(modelId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
+
+        log.warn("[어드민 도면 강제 삭제] modelId={}, modelName={}", model.getId(), model.getName());
+
+        model.setDeleted(true);
+        modelRepository.save(model);
+    }
 }
 

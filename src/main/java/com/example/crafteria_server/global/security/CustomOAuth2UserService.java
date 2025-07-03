@@ -11,6 +11,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -36,6 +37,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         // 5. 회원가입 및 로그인
         User user = getOrSave(oAuth2UserInfo);
+
+        if (user.getBanUntil() != null && user.getBanUntil().isAfter(LocalDateTime.now())) {
+            throw new OAuth2AuthenticationException("정지된 계정입니다. 정지 해제일: " + user.getBanUntil());
+        }
 
         // 6. OAuth2User로 반환
         return new PrincipalDetails(user, oAuth2UserAttributes);
