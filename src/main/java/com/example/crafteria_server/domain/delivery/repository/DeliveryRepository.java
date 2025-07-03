@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface DeliveryRepository extends JpaRepository<Delivery, Long> {
     List<Delivery> findAllByOrder_Manufacturer_Id(Long manufacturerId);
+    List<Delivery> findAllByOrder_User_Id(Long userId);
 }

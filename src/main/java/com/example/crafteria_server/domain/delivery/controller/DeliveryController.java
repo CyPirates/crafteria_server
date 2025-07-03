@@ -81,4 +81,29 @@ public class DeliveryController {
         return ResponseEntity
                 .ok(JsonBody.of(200, "배송 목록 조회 성공", responseList));
     }
+
+    @Operation(summary = "배송 전체 조회 (관리자)", description = "모든 배송 정보를 조회합니다. (관리자용)")
+    @GetMapping
+    public ResponseEntity<JsonBody<List<DeliveryDto.DeliveryResponse>>> getAllDeliveries(
+            @AuthenticationPrincipal PrincipalDetails principalDetails) {
+
+
+        // if (principalDetails.getUser().getRole() != Role.ADMIN) {
+        //     throw new AccessDeniedException("관리자만 접근 가능합니다.");
+        // }
+
+        List<DeliveryDto.DeliveryResponse> responseList = deliveryService.getAllDeliveries();
+        return ResponseEntity
+                .ok(JsonBody.of(200, "전체 배송 목록 조회 성공", responseList));
+    }
+
+    @Operation(summary = "내 주문 배송 목록 조회", description = "회원이 자신의 주문에 대한 배송 정보를 조회합니다.")
+    @GetMapping("/my-orders")
+    public ResponseEntity<JsonBody<List<DeliveryDto.DeliveryResponse>>> getDeliveriesForMyOrders(
+            @AuthenticationPrincipal PrincipalDetails principalDetails) {
+
+        List<DeliveryDto.DeliveryResponse> responseList = deliveryService.getDeliveriesForUserOrders(principalDetails.getUser());
+        return ResponseEntity
+                .ok(JsonBody.of(200, "내 주문 배송 목록 조회 성공", responseList));
+    }
 }
