@@ -43,6 +43,10 @@ public class User extends BaseEntity {
     @Column(name = "ban_until")
     private LocalDateTime banUntil;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean banned = false;
+
     @Column(nullable = true)
     private String manufacturerName;
 
@@ -87,4 +91,6 @@ public class User extends BaseEntity {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserAddress> addresses = new ArrayList<>();
+
+
 }

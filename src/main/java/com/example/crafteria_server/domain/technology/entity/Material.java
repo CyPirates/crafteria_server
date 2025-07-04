@@ -7,7 +7,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum Material {
     FILAMENT("FILAMENT"),
-    POWDER("POWDER"),
+    NYLONPOWDER("NYLONPOWDER"),
+    METALPOWDER("METALPOWDER"),
     LIQUID("LIQUID"),
     ;
     private final String key;

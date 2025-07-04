@@ -28,6 +28,12 @@ public class UserResponse {
     @Schema(description = "유저 권한", example = "ROLE_USER")
     private Role role;
 
+    @Schema(description = "밴 상태", example = "false")
+    private boolean banned;
+
+    @Schema(description = "밴 해제 예정 시간", example = "2023-10-01T12:00:00")
+    private String banUntil;
+
     @Schema(description = "총 도면 구매 횟수", example = "3")
     private int totalPurchaseCount;
 
@@ -74,6 +80,8 @@ public class UserResponse {
                 .userLevel(user.getUserLevel())
                 .sellerLevel(user.getSellerLevel())
                 .addresses(addresses)
+                .banned(user.isBanned())
+                .banUntil(user.getBanUntil() != null ? user.getBanUntil().toString() : null)
                 .build();
     }
 }

@@ -90,9 +90,6 @@ public class UserService implements UserDetailsService {
             throw new BadCredentialsException("비밀번호가 일치하지 않습니다.");
         }
 
-        if (user.getBanUntil() != null && user.getBanUntil().isAfter(LocalDateTime.now())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "계정이 정지된 상태입니다. 정지 해제일: " + user.getBanUntil());
-        }
 
         if (user.getRole() == Role.DASHBOARD && user.getDashboardStatus() != DashboardStatus.APPROVED) {
             throw new UsernameNotFoundException("승인되지 않은 계정입니다.");
@@ -142,7 +139,9 @@ public class UserService implements UserDetailsService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+
         user.setBanUntil(until);
+        user.setBanned(true); // ✅ banned true 설정
         userRepository.save(user);
     }
 
@@ -295,6 +294,17 @@ public class UserService implements UserDetailsService {
                 .detailAddress(address.getDetailAddress())
                 .isDefault(address.isDefault())
                 .build();
+    }
+
+    public User checkAndLiftBan(User user) {
+        if (user.isBanned()
+                && user.getBanUntil() != null
+                && user.getBanUntil().isBefore(LocalDateTime.now())) {
+            user.setBanUntil(null);
+            user.setBanned(false);
+            userRepository.save(user);
+        }
+        return user;
     }
 
 
