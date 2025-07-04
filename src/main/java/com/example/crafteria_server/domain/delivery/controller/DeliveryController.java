@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -82,6 +83,7 @@ public class DeliveryController {
                 .ok(JsonBody.of(200, "배송 목록 조회 성공", responseList));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "배송 전체 조회 (관리자)", description = "모든 배송 정보를 조회합니다. (관리자용)")
     @GetMapping
     public ResponseEntity<JsonBody<List<DeliveryDto.DeliveryResponse>>> getAllDeliveries(

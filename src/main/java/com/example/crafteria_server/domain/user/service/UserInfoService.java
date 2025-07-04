@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -18,10 +19,18 @@ public class UserInfoService {
     private final UserRepository userRepository;
 
     // 로그인한 사용자의 정보를 반환
-    @Transactional(readOnly = true)
+    @Transactional
     public User getCurrentUser(Long userId) {
-        return userRepository.findById(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
+
+        if (user.getBanUntil() != null && user.getBanUntil().isBefore(LocalDateTime.now())) {
+            user.setBanned(false);
+            user.setBanUntil(null);
+            userRepository.save(user);
+        }
+
+        return user;
     }
 
     // 특정 사용자 정보 조회
