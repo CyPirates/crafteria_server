@@ -53,18 +53,19 @@ public class ManufacturerService {
                 .dialNumber(request.getDialNumber())
                 .representativeEquipment(request.getRepresentativeEquipment())
                 .printSpeedFilament(request.getPrintSpeedFilament())
-                .printSpeedPowder(request.getPrintSpeedPowder())
+                .printSpeedMetalPowder(request.getPrintSpeedMetalPowder())
+                .printSpeedNylonPowder(request.getPrintSpeedNylonPowder())
                 .printSpeedLiquid(request.getPrintSpeedLiquid())
                 .image(savedFile)
                 .dashboardUser(dashboardUser)
                 .technologies(new ArrayList<>()) // 기술 목록을 빈 리스트로 초기화
                 .build();
 
-        log.info("[제조사 등록] 사용자: {} (ID: {}), 제조사 이름: {}, 전화번호: {}, 주소: {}, 대표장비: {}, 필라멘트속도: {}, 분말속도: {}, 액체속도: {}",
+        log.info("[제조사 등록] 사용자: {} (ID: {}), 제조사 이름: {}, 전화번호: {}, 주소: {}, 대표장비: {}, 필라멘트속도: {}, 금속분말속도: {}, 나일론분말속도:{}, 액체속도: {}",
                 dashboardUser.getUsername(), dashboardUser.getId(),
                 request.getName(), request.getDialNumber(), request.getAddress(),
                 request.getRepresentativeEquipment(),
-                request.getPrintSpeedFilament(), request.getPrintSpeedPowder(), request.getPrintSpeedLiquid());
+                request.getPrintSpeedFilament(), request.getPrintSpeedMetalPowder(),request.getPrintSpeedNylonPowder(), request.getPrintSpeedLiquid());
 
         Manufacturer savedManufacturer = manufacturerRepository.save(manufacturer);
 
@@ -135,7 +136,8 @@ public class ManufacturerService {
         manufacturer.setDialNumber(request.getDialNumber());
         manufacturer.setRepresentativeEquipment(request.getRepresentativeEquipment());
         manufacturer.setPrintSpeedFilament(request.getPrintSpeedFilament());
-        manufacturer.setPrintSpeedPowder(request.getPrintSpeedPowder());
+        manufacturer.setPrintSpeedMetalPowder(request.getPrintSpeedMetalPowder());
+        manufacturer.setPrintSpeedNylonPowder(request.getPrintSpeedNylonPowder());
         manufacturer.setPrintSpeedLiquid(request.getPrintSpeedLiquid());
 
         Manufacturer updatedManufacturer = manufacturerRepository.save(manufacturer);

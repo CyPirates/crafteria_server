@@ -81,10 +81,13 @@ public class Manufacturer extends BaseEntity {
     @Column(name = "print_speed_filament", nullable = true)
     private Float printSpeedFilament; // 필리아멘트 재료의 출력 속도
 
-    @Column(name = "print_speed_powder", nullable = true)
-    private Float printSpeedPowder; // 파우더 재료의 출력 속도
+    @Column(name = "print_speed_metalpowder", nullable = true)
+    private Float printSpeedMetalPowder; // 파우더 재료의 출력 속도
 
     @Column(name = "print_speed_liquid", nullable = true)
     private Float printSpeedLiquid; // 리퀴드 재료의 출력 속도
+
+    @Column(name = "print_speed_nylonpowder", nullable = true)
+    private Float printSpeedNylonPowder; // 나일론 파우더 재료의 출력 속도
 
 }
