@@ -72,11 +72,14 @@ public class ManufacturerDTO {
         @Schema(description = "필리아멘트 출력 속도", example = "50.5")
         private Float printSpeedFilament;
 
-        @Schema(description = "파우더 출력 속도", example = "30.2")
-        private Float printSpeedPowder;
+        @Schema(description = "메탈파우더 출력 속도", example = "30.2")
+        private Float printSpeedMetalPowder;
 
         @Schema(description = "리퀴드 출력 속도", example = "40.3")
         private Float printSpeedLiquid;
+
+        @Schema(description = "나일론파우더 출력 속도", example = "25.0")
+        private Float printSpeedNylonPowder;
 
         public static ManufacturerResponse from(Manufacturer manufacturer) {
             return ManufacturerResponse.builder()
@@ -100,7 +103,8 @@ public class ManufacturerDTO {
                             .collect(Collectors.toList()))
                     .printSpeedFilament(manufacturer.getPrintSpeedFilament())
                     .printSpeedLiquid(manufacturer.getPrintSpeedLiquid())
-                    .printSpeedPowder(manufacturer.getPrintSpeedPowder())
+                    .printSpeedMetalPowder(manufacturer.getPrintSpeedMetalPowder())
+                    .printSpeedNylonPowder(manufacturer.getPrintSpeedNylonPowder())
                     .build();
         }
 
@@ -140,11 +144,14 @@ public class ManufacturerDTO {
         @Schema(description = "필리아멘트 출력 속도", example = "50.5")
         private Float printSpeedFilament;
 
-        @Schema(description = "파우더 출력 속도", example = "30.2")
-        private Float printSpeedPowder;
+        @Schema(description = "메탈파우더 출력 속도", example = "30.2")
+        private Float printSpeedMetalPowder;
 
         @Schema(description = "리퀴드 출력 속도", example = "40.3")
         private Float printSpeedLiquid;
+
+        @Schema(description = "나일론파우더 출력 속도", example = "25.0")
+        private Float printSpeedNylonPowder;
 
 
     }
