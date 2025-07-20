@@ -35,6 +35,9 @@ public class UserResponse {
     @Schema(description = "밴 해제 예정 시간", example = "2023-10-01T12:00:00")
     private String banUntil;
 
+    @Schema(description = "전화 번호", example = "010-1234-5678")
+    private String phoneNumber;
+
     @Schema(description = "총 도면 구매 횟수", example = "3")
     private int totalPurchaseCount;
 
@@ -75,6 +78,7 @@ public class UserResponse {
                 .realname(user.getRealname())
                 .role(user.getRole())
                 .oauth2Id(user.getOauth2Id())
+                .phoneNumber(user.getPhoneNumber())
                 .totalPurchaseCount(user.getTotalPurchaseCount())
                 .totalPurchaseAmount(user.getTotalPurchaseAmount())
                 .totalUploadCount(user.getTotalUploadCount())

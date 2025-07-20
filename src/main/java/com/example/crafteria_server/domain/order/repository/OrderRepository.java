@@ -27,6 +27,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findByManufacturerId(Long manufacturerId);
 
+    List<Order> findAllByManufacturerId(Long manufacturerId);
+
     @Query("SELECT o FROM Order o WHERE o.user.id = :userId AND o.status != 'ORDERED'")
     List<Order> findAllByUserIdExcludingOrdered(Long userId, Pageable pageable);
 

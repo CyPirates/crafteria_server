@@ -1,6 +1,7 @@
 package com.example.crafteria_server.domain.user.controller;
 
 import com.example.crafteria_server.domain.user.dto.UserAddressDto;
+import com.example.crafteria_server.domain.user.dto.UserBasicInfoUpdateRequest;
 import com.example.crafteria_server.domain.user.dto.UserResponse;
 import com.example.crafteria_server.domain.user.dto.UserUpdateRequest;
 import com.example.crafteria_server.domain.user.entity.User;
@@ -152,5 +153,24 @@ public class UserInfoController {
                                     @AuthenticationPrincipal PrincipalDetails principalDetails) throws AccessDeniedException {
         userService.banUser(userId, until, principalDetails);
         return JsonBody.of(200, "사용자가 " + until + "까지 정지되었습니다.", null);
+    }
+
+    @PatchMapping("/me/basic")
+    @Operation(summary = "사용자 기본 정보 수정", description = "사용자의 닉네임과 전화번호를 수정합니다.")
+    public JsonBody<UserResponse> updateBasicUserInfo(
+            @AuthenticationPrincipal PrincipalDetails principalDetails,
+            @RequestBody @Valid UserBasicInfoUpdateRequest request) {
+
+        if (principalDetails == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        log.info("기본 정보 수정 요청 - 유저ID: {}, username: {}, phoneNumber: {}",
+                principalDetails.getUserId(), request.getUsername(), request.getPhoneNumber());
+
+        userService.updateBasicUserInfo(principalDetails.getUserId(), request);
+        User updatedUser = userInfoService.getCurrentUser(principalDetails.getUserId());
+        List<UserAddressDto.UserAddressResponse> addresses = userService.getUserAddresses(updatedUser.getId());
+        return JsonBody.of(200, "기본 정보 수정 성공", UserResponse.from(updatedUser, addresses, null));
     }
 }

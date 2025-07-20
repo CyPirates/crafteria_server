@@ -1,9 +1,6 @@
 package com.example.crafteria_server.domain.user.service;
 
-import com.example.crafteria_server.domain.user.dto.LoginDto;
-import com.example.crafteria_server.domain.user.dto.RegisterRequest;
-import com.example.crafteria_server.domain.user.dto.UserAddressDto;
-import com.example.crafteria_server.domain.user.dto.UserUpdateRequest;
+import com.example.crafteria_server.domain.user.dto.*;
 import com.example.crafteria_server.domain.user.entity.DashboardStatus;
 import com.example.crafteria_server.domain.user.entity.Role;
 import com.example.crafteria_server.domain.user.entity.User;
@@ -305,6 +302,29 @@ public class UserService implements UserDetailsService {
             userRepository.save(user);
         }
         return user;
+    }
+
+    @Transactional
+    public void updateBasicUserInfo(Long userId, UserBasicInfoUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+
+        // username 중복 체크 (자기 자신 제외)
+        if (!user.getUsername().equals(request.getUsername())
+                && userRepository.existsByUsername(request.getUsername())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 사용 중인 닉네임입니다.");
+        }
+
+        // phoneNumber 중복 체크 (자기 자신 제외)
+        if (!request.getPhoneNumber().equals(user.getPhoneNumber())
+                && userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 사용 중인 전화번호입니다.");
+        }
+
+        user.setUsername(request.getUsername());
+        user.setPhoneNumber(request.getPhoneNumber());
+
+        userRepository.save(user);
     }
 
 
