@@ -4,6 +4,7 @@ package com.example.crafteria_server.domain.manufacturer.dto;
 import com.example.crafteria_server.domain.equipment.dto.EquipmentDto;
 import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
+import com.example.crafteria_server.domain.order.entity.Order;
 import com.example.crafteria_server.domain.technology.dto.TechnologyDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -81,7 +82,38 @@ public class ManufacturerDTO {
         @Schema(description = "나일론파우더 출력 속도", example = "25.0")
         private Float printSpeedNylonPowder;
 
+        @Schema(description = "판매 기록 목록")
+        private List<ManufacturerSaleRecord> sales;
+
         public static ManufacturerResponse from(Manufacturer manufacturer) {
+            return ManufacturerResponse.builder()
+                    .id(manufacturer.getId())
+                    .name(manufacturer.getName())
+                    .introduction(manufacturer.getIntroduction())
+                    .address(manufacturer.getAddress())
+                    .dialNumber(manufacturer.getDialNumber())
+                    .productionCount(manufacturer.getProductionCount())
+                    .rating(manufacturer.getRating())
+                    .representativeEquipment(manufacturer.getRepresentativeEquipment())
+                    .imageFileUrl(manufacturer.getImage() != null ? manufacturer.getImage().getUrl() : null)
+                    .totalReviews(manufacturer.getTotalReviews())
+                    .equipmentList(manufacturer.getEquipmentList() != null
+                            ? manufacturer.getEquipmentList().stream()
+                            .map(EquipmentDto.EquipmentResponse::from)
+                            .collect(Collectors.toList())
+                            : Collections.emptyList())
+                    .technologies(manufacturer.getTechnologies().stream()
+                            .map(TechnologyDto.TechnologyResponse::from)
+                            .collect(Collectors.toList()))
+                    .printSpeedFilament(manufacturer.getPrintSpeedFilament())
+                    .printSpeedLiquid(manufacturer.getPrintSpeedLiquid())
+                    .printSpeedMetalPowder(manufacturer.getPrintSpeedMetalPowder())
+                    .printSpeedNylonPowder(manufacturer.getPrintSpeedNylonPowder())
+                    .sales(Collections.emptyList())  // 일반 사용자에겐 빈 리스트
+                    .build();
+        }
+
+        public static ManufacturerResponse from(Manufacturer manufacturer, List<Order> orders) {
             return ManufacturerResponse.builder()
                     .id(manufacturer.getId())
                     .name(manufacturer.getName())
@@ -105,6 +137,7 @@ public class ManufacturerDTO {
                     .printSpeedLiquid(manufacturer.getPrintSpeedLiquid())
                     .printSpeedMetalPowder(manufacturer.getPrintSpeedMetalPowder())
                     .printSpeedNylonPowder(manufacturer.getPrintSpeedNylonPowder())
+                    .sales(orders.stream().map(ManufacturerSaleRecord::from).collect(Collectors.toList()))
                     .build();
         }
 

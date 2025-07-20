@@ -2,6 +2,7 @@ package com.example.crafteria_server.domain.user.dto;
 
 import com.example.crafteria_server.domain.user.entity.Role;
 import com.example.crafteria_server.domain.user.entity.User;
+import com.example.crafteria_server.domain.user.repository.ModelSaleTransaction;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
@@ -34,6 +35,9 @@ public class UserResponse {
     @Schema(description = "밴 해제 예정 시간", example = "2023-10-01T12:00:00")
     private String banUntil;
 
+    @Schema(description = "전화 번호", example = "010-1234-5678")
+    private String phoneNumber;
+
     @Schema(description = "총 도면 구매 횟수", example = "3")
     private int totalPurchaseCount;
 
@@ -61,15 +65,20 @@ public class UserResponse {
     @Schema(description = "판매자 레벨(1~5)", example = "4")
     private int sellerLevel;
 
+    @Schema(description = "유저 주소 목록", example = "[]")
     private List<UserAddressDto.UserAddressResponse> addresses;
 
-    public static UserResponse from(User user, List<UserAddressDto.UserAddressResponse> addresses) {
+    @Schema(description = "판매 거래 내역", example = "[]")
+    private List<ModelSaleTransaction> salesTransactions;
+
+    public static UserResponse from(User user, List<UserAddressDto.UserAddressResponse> addresses , List<ModelSaleTransaction> salesTransactions) {
         return UserResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .realname(user.getRealname())
                 .role(user.getRole())
                 .oauth2Id(user.getOauth2Id())
+                .phoneNumber(user.getPhoneNumber())
                 .totalPurchaseCount(user.getTotalPurchaseCount())
                 .totalPurchaseAmount(user.getTotalPurchaseAmount())
                 .totalUploadCount(user.getTotalUploadCount())
@@ -82,6 +91,7 @@ public class UserResponse {
                 .addresses(addresses)
                 .banned(user.isBanned())
                 .banUntil(user.getBanUntil() != null ? user.getBanUntil().toString() : null)
+                .salesTransactions(salesTransactions)
                 .build();
     }
 }

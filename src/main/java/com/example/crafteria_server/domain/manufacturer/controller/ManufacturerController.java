@@ -131,4 +131,20 @@ public class ManufacturerController {
                 .status(HttpStatus.OK)
                 .body(JsonBody.of(200, "상세 설명 조회 성공", details));
     }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin")
+    @Operation(summary = "[어드민] 모든 제조사 조회", description = "어드민 권한으로 모든 제조사의 정보를 조회합니다.")
+    public ResponseEntity<JsonBody<List<ManufacturerDTO.ManufacturerResponse>>> getAllManufacturersForAdmin() {
+        List<ManufacturerDTO.ManufacturerResponse> responseList = manufacturerService.getAllManufacturersForAdmin();
+        return ResponseEntity.ok(JsonBody.of(200, "모든 제조사 조회 성공", responseList));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin/{id}")
+    @Operation(summary = "[어드민] 특정 제조사 조회", description = "어드민 권한으로 특정 제조사의 정보를 조회합니다.")
+    public ResponseEntity<JsonBody<ManufacturerDTO.ManufacturerResponse>> getManufacturerByIdForAdmin(@PathVariable Long id) {
+        ManufacturerDTO.ManufacturerResponse response = manufacturerService.getManufacturerByIdForAdmin(id);
+        return ResponseEntity.ok(JsonBody.of(200, "제조사 조회 성공", response));
+    }
 }

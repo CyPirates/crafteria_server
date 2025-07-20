@@ -5,9 +5,12 @@ import com.example.crafteria_server.domain.file.service.FileService;
 import com.example.crafteria_server.domain.manufacturer.dto.ManufacturerDTO;
 import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
 import com.example.crafteria_server.domain.manufacturer.repository.ManufacturerRepository;
+import com.example.crafteria_server.domain.order.entity.Order;
+import com.example.crafteria_server.domain.order.repository.OrderRepository;
 import com.example.crafteria_server.domain.user.entity.Role;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.global.security.PrincipalDetails;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -29,7 +32,7 @@ public class ManufacturerService {
 
     private final ManufacturerRepository manufacturerRepository;
     private final FileService fileService;  // 파일 저장 관련 서비스
-
+    private final OrderRepository orderRepository; // 주문 관련 레포지토리
     // 제조사 등록
     public ManufacturerDTO.ManufacturerResponse createManufacturer(
             ManufacturerDTO.ManufacturerRequest request,
@@ -186,5 +189,23 @@ public class ManufacturerService {
         manufacturerRepository.save(manufacturer);
 
         return ManufacturerDTO.ManufacturerResponse.from(manufacturer);
+    }
+
+    public List<ManufacturerDTO.ManufacturerResponse> getAllManufacturersForAdmin() {
+        List<Manufacturer> manufacturers = manufacturerRepository.findAll();
+
+        return manufacturers.stream()
+                .map(manufacturer -> {
+                    List<Order> orders = orderRepository.findAllByManufacturerId(manufacturer.getId());
+                    return ManufacturerDTO.ManufacturerResponse.from(manufacturer, orders);
+                })
+                .collect(Collectors.toList());
+    }
+
+    public ManufacturerDTO.ManufacturerResponse getManufacturerByIdForAdmin(Long id) {
+        Manufacturer manufacturer = manufacturerRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("제조사를 찾을 수 없습니다."));
+        List<Order> orders = orderRepository.findAllByManufacturerId(manufacturer.getId());
+        return ManufacturerDTO.ManufacturerResponse.from(manufacturer, orders);
     }
 }
