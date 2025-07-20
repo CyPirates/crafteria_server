@@ -41,9 +41,10 @@ public class UserInfoController {
         if (principalDetails == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
+
         User user = userInfoService.getCurrentUser(principalDetails.getUserId());
-        List<UserAddressDto.UserAddressResponse> addresses = userService.getUserAddresses(user.getId());
-        return JsonBody.of(200, "성공", UserResponse.from(user, addresses));
+        UserResponse response = userInfoService.toUserResponse(user);
+        return JsonBody.of(200, "성공", response);
     }
 
     @PatchMapping("/me")
@@ -60,25 +61,27 @@ public class UserInfoController {
                 principalDetails.getUserId(), request.getUsername(), request.getRealname());
 
         userService.updateBasicUserInfo(principalDetails.getUserId(), request);
+
         User updatedUser = userInfoService.getCurrentUser(principalDetails.getUserId());
-        List<UserAddressDto.UserAddressResponse> addresses = userService.getUserAddresses(updatedUser.getId());
-        return JsonBody.of(200, "성공", UserResponse.from(updatedUser, addresses));
+        UserResponse response = userInfoService.toUserResponse(updatedUser);
+        return JsonBody.of(200, "성공", response);
     }
 
     @GetMapping("/{userId}")
     @Operation(summary = "특정 사용자 조회", description = "특정 사용자의 정보를 조회합니다.")
     public JsonBody<UserResponse> getUserById(@PathVariable Long userId) {
         User user = userInfoService.getUserById(userId);
-        List<UserAddressDto.UserAddressResponse> addresses = userService.getUserAddresses(user.getId());
-        return JsonBody.of(200, "성공", UserResponse.from(user, addresses));
+        UserResponse response = userInfoService.toUserResponse(user);
+        return JsonBody.of(200, "성공", response);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     @Operation(summary = "모든 사용자 조회", description = "모든 사용자의 정보를 조회합니다.")
     public JsonBody<List<UserResponse>> getAllUsers() {
         List<User> users = userInfoService.getAllUsers();
         List<UserResponse> responses = users.stream()
-                .map(user -> UserResponse.from(user, userService.getUserAddresses(user.getId())))
+                .map(userInfoService::toUserResponse)
                 .toList();
         return JsonBody.of(200, "성공", responses);
     }

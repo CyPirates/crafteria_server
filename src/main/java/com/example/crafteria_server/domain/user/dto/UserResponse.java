@@ -2,6 +2,7 @@ package com.example.crafteria_server.domain.user.dto;
 
 import com.example.crafteria_server.domain.user.entity.Role;
 import com.example.crafteria_server.domain.user.entity.User;
+import com.example.crafteria_server.domain.user.repository.ModelSaleTransaction;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
@@ -61,9 +62,13 @@ public class UserResponse {
     @Schema(description = "판매자 레벨(1~5)", example = "4")
     private int sellerLevel;
 
+    @Schema(description = "유저 주소 목록", example = "[]")
     private List<UserAddressDto.UserAddressResponse> addresses;
 
-    public static UserResponse from(User user, List<UserAddressDto.UserAddressResponse> addresses) {
+    @Schema(description = "판매 거래 내역", example = "[]")
+    private List<ModelSaleTransaction> salesTransactions;
+
+    public static UserResponse from(User user, List<UserAddressDto.UserAddressResponse> addresses , List<ModelSaleTransaction> salesTransactions) {
         return UserResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
@@ -82,6 +87,7 @@ public class UserResponse {
                 .addresses(addresses)
                 .banned(user.isBanned())
                 .banUntil(user.getBanUntil() != null ? user.getBanUntil().toString() : null)
+                .salesTransactions(salesTransactions)
                 .build();
     }
 }
