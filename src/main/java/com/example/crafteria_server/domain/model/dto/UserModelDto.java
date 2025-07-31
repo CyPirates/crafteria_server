@@ -1,5 +1,6 @@
 package com.example.crafteria_server.domain.model.dto;
 
+import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.domain.model.entity.Model;
 import com.example.crafteria_server.domain.model.entity.ModelCategory;
 import com.example.crafteria_server.domain.model.entity.ModelPurchase;
@@ -8,6 +9,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Optional;
 
 public class UserModelDto {
     @Getter
@@ -80,6 +83,11 @@ public class UserModelDto {
 
 
         public static ModelResponse from(Model model, boolean purchaseAvailability, boolean downloadable) {
+            String modelFileUrl = Optional.ofNullable(model.getModelFile())
+                    .map(File::getUrl)
+                    .orElse(null); // null-safe
+
+
             return ModelResponse.builder()
                     .id(model.getId())
                     .author(AuthorDto.AuthorResponse.from(model.getAuthor()))
@@ -94,7 +102,7 @@ public class UserModelDto {
                     .heightSize(model.getHeightSize())
                     .category(model.getCategory())
                     .purchaseAvailability(purchaseAvailability)
-                    .modelFileUrl(model.getModelFile().getUrl())
+                    .modelFileUrl(modelFileUrl)
                     .downloadable(downloadable)
                     .build();
         }
