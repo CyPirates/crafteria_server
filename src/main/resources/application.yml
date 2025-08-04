@@ -86,6 +86,11 @@ spring:
       secret: ${PORTONE_API_SECRET}
 
 
+tracker:
+    delivery:
+      client-id: ${TRACKER_CLIENT_ID}
+      client-secret: ${TRACKER_CLIENT_SECRET}
+
 server:
   port: ${SERVER_PORT}
 
