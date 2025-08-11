@@ -4,6 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.servers.Server;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @OpenAPIDefinition(
         servers = {
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.servers.Server;
         }
 )
 @SpringBootApplication
+@EnableScheduling
 public class CrafteriaServerApplication {
 
     public static void main(String[] args) {

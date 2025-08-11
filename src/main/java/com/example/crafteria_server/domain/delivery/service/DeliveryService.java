@@ -3,6 +3,7 @@ package com.example.crafteria_server.domain.delivery.service;
 import com.example.crafteria_server.domain.delivery.dto.DeliveryDto;
 import com.example.crafteria_server.domain.delivery.entity.Delivery;
 import com.example.crafteria_server.domain.delivery.repository.DeliveryRepository;
+import com.example.crafteria_server.domain.deliverytracking.service.TrackingWebhookRegistrar;
 import com.example.crafteria_server.domain.order.entity.Order;
 import com.example.crafteria_server.domain.order.entity.OrderStatus;
 import com.example.crafteria_server.domain.order.repository.OrderRepository;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 public class DeliveryService {
     private final DeliveryRepository deliveryRepository;
     private final OrderRepository orderRepository;
+    private final TrackingWebhookRegistrar webhookRegistrar;
 
     private void validateOrderStatusForCreate(Long orderId) {
         Order order = orderRepository.findById(orderId)
@@ -63,6 +65,12 @@ public class DeliveryService {
                 .build();
 
         delivery = deliveryRepository.save(delivery);
+
+        if (delivery.getCourier() != null && delivery.getTrackingNumber() != null) {
+            webhookRegistrar.registerTrackWebhook(delivery.getCourier(), delivery.getTrackingNumber());
+        }
+
+
         return DeliveryDto.DeliveryResponse.from(delivery);
     }
 
@@ -131,4 +139,8 @@ public class DeliveryService {
                 .map(DeliveryDto.DeliveryResponse::from)
                 .collect(Collectors.toList());
     }
+
+
+
+
 }
