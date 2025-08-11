@@ -32,6 +32,7 @@ import java.util.Optional;
 public class DeliveryTrackingService {
 
     private final DeliveryRepository deliveryRepository;
+    private final RestTemplate rest = new RestTemplate();
 
     @Value("${tracker.delivery.client-id}")
     private String clientId;
@@ -39,82 +40,81 @@ public class DeliveryTrackingService {
     @Value("${tracker.delivery.client-secret}")
     private String clientSecret;
 
-    private static final String TRACKER_URL = "https://apis.tracker.delivery/graphql";
+    private static final String TRACKER_GQL = "https://apis.tracker.delivery/graphql";
 
+    @Transactional
     public void handleTrackingStatusChange(String carrierId, String trackingNumber) {
         try {
-            // 1. GraphQL 쿼리 (변수 방식)
-            String graphqlQuery = """
+            String query = """
                 query Track($carrierId: ID!, $trackingNumber: String!) {
                   track(carrierId: $carrierId, trackingNumber: $trackingNumber) {
                     lastEvent {
                       time
-                      status {
-                        code
-                        name
-                      }
+                      status { code name }
                       description
                     }
                   }
                 }
             """;
 
-            // 2. 변수 설정
-            Map<String, Object> variables = new HashMap<>();
-            variables.put("carrierId", carrierId);
-            variables.put("trackingNumber", trackingNumber);
+            Map<String, Object> variables = Map.of(
+                    "carrierId", carrierId,
+                    "trackingNumber", trackingNumber
+            );
 
-            // 3. 요청 본문 생성
-            Map<String, Object> body = new HashMap<>();
-            body.put("query", graphqlQuery);
-            body.put("variables", variables);
-
-            // 4. 헤더 설정
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "TRACKQL-API-KEY " + clientId + ":" + clientSecret);
 
-            // 5. 요청 실행
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
-            RestTemplate restTemplate = new RestTemplate();
-            ResponseEntity<JsonNode> response = restTemplate.postForEntity(TRACKER_URL, request, JsonNode.class);
+            Map<String, Object> body = Map.of("query", query, "variables", variables);
 
-            // 6. 응답 처리
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                JsonNode lastEvent = response.getBody()
-                        .path("data").path("track").path("lastEvent");
+            ResponseEntity<JsonNode> resp = rest.postForEntity(
+                    TRACKER_GQL, new HttpEntity<>(body, headers), JsonNode.class);
 
-                String statusCode = lastEvent.path("status").path("code").asText();
-                String statusName = lastEvent.path("status").path("name").asText();
-
-                Optional<Delivery> optionalDelivery = deliveryRepository.findByTrackingNumber(trackingNumber);
-                if (optionalDelivery.isEmpty()) {
-                    log.warn("⚠️ 해당 운송장번호와 일치하는 Delivery가 없습니다: {}", trackingNumber);
-                    return;
-                }
-
-                Delivery delivery = optionalDelivery.get();
-                Order order = delivery.getOrder();
-
-                if ("delivered".equalsIgnoreCase(statusCode)) {
-                    order.setStatus(OrderStatus.DELIVERED);
-                } else if ("in_transit".equalsIgnoreCase(statusCode) || "out_for_delivery".equalsIgnoreCase(statusCode)) {
-                    order.setStatus(OrderStatus.DELIVERING);
-                } else {
-                    log.info("🔍 상태 업데이트 없음: statusCode={}, statusName={}", statusCode, statusName);
-                    return;
-                }
-
-                log.info("📦 주문 상태 업데이트 완료: orderId={}, status={}", order.getId(), order.getStatus());
-
-            } else {
-                log.error("❌ Tracker.delivery 응답 오류: {}", response.getBody());
+            if (!resp.getStatusCode().is2xxSuccessful() || resp.getBody() == null) {
+                log.error("[TrackingAPI] 비정상 응답: {}", resp);
+                return;
             }
 
+            JsonNode lastEvent = resp.getBody().path("data").path("track").path("lastEvent");
+            if (lastEvent.isMissingNode() || lastEvent.isNull()) {
+                log.info("[TrackingAPI] lastEvent 없음: carrierId={}, tracking={}", carrierId, trackingNumber);
+                return;
+            }
+
+            String code = lastEvent.path("status").path("code").asText(null);
+            if (code == null) {
+                log.info("[TrackingAPI] status.code 없음: {}", lastEvent);
+                return;
+            }
+
+            deliveryRepository.findByTrackingNumber(trackingNumber).ifPresent(delivery -> {
+                Order order = delivery.getOrder();
+
+                // 코드 매핑: 필요시 추가 코드(in_delivery_started 등)도 덧붙이면 됨
+                if ("delivered".equalsIgnoreCase(code)) {
+                    if (order.getStatus() != OrderStatus.DELIVERED) {
+                        order.setStatus(OrderStatus.DELIVERED);
+                        log.info("[주문상태] DELIVERED로 갱신 - orderId={}", order.getId());
+                    }
+                } else if ("in_transit".equalsIgnoreCase(code) || "out_for_delivery".equalsIgnoreCase(code)) {
+                    if (order.getStatus() != OrderStatus.DELIVERING) {
+                        order.setStatus(OrderStatus.DELIVERING);
+                        log.info("[주문상태] DELIVERING으로 갱신 - orderId={}", order.getId());
+                    }
+                } else {
+                    // 그 외 상태는 스킵 (필요하면 추가 매핑)
+                    log.debug("[주문상태] 갱신 없음 - code={}", code);
+                }
+                // 트랜잭션 내라 save 호출 불필요(JPA flush)지만, 명시적으로 넣고 싶다면 레포지토리 통해 save 가능
+            });
+
         } catch (HttpClientErrorException e) {
-            log.error("🚫 Tracker.delivery API 요청 오류 ({}): {}", e.getStatusCode(), e.getResponseBodyAsString());
+            log.error("[TrackingAPI 오류] {} : {}", e.getStatusCode(), e.getResponseBodyAsString());
         } catch (Exception e) {
-            log.error("❗ 운송장 상태 갱신 중 예외 발생", e);
+            log.error("[Tracking 처리 예외]", e);
         }
     }
+
+
 }

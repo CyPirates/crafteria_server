@@ -90,6 +90,8 @@ tracker:
     delivery:
       client-id: ${TRACKER_CLIENT_ID}
       client-secret: ${TRACKER_CLIENT_SECRET}
+      webhook-callback-url: ${TRACKER_WEBHOOK_CALLBACK_URL}
+      webhook-ttl-hours: ${TRACKER_WEBHOOK_TTL_HOURS}
 
 server:
   port: ${SERVER_PORT}
