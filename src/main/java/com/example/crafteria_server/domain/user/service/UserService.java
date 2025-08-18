@@ -1,15 +1,16 @@
 package com.example.crafteria_server.domain.user.service;
 
 import com.example.crafteria_server.domain.user.dto.*;
-import com.example.crafteria_server.domain.user.entity.DashboardStatus;
-import com.example.crafteria_server.domain.user.entity.Role;
-import com.example.crafteria_server.domain.user.entity.User;
-import com.example.crafteria_server.domain.user.entity.UserAddress;
+import com.example.crafteria_server.domain.user.entity.*;
+import com.example.crafteria_server.domain.user.repository.AuthorRepository;
 import com.example.crafteria_server.domain.user.repository.UserRepository;
 import com.example.crafteria_server.global.security.PrincipalDetails;
 import com.example.crafteria_server.global.security.TokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -35,6 +36,7 @@ public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenProvider tokenProvider;
+    private final AuthorRepository authorRepository;
 
     public void registerDashboardUser(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -325,6 +327,18 @@ public class UserService implements UserDetailsService {
         user.setPhoneNumber(request.getPhoneNumber());
 
         userRepository.save(user);
+    }
+
+    public List<PopularAuthorDto> getPopularAuthorsBySales(int page) {
+        Pageable pageable = PageRequest.of(page, 10);
+        Page<Author> result = authorRepository.findPopularAuthorsBySales(pageable);
+
+        List<PopularAuthorDto> list = result.getContent().stream()
+                .map(PopularAuthorDto::from)
+                .toList();
+
+        log.info("[인기 작가 조회] page={}, size={}, returned={}", page, pageable.getPageSize(), list.size());
+        return list;
     }
 
 

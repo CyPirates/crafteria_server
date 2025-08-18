@@ -340,5 +340,55 @@ public class ModelService {
         model.setDeleted(true);
         modelRepository.save(model);
     }
+
+    public List<UserModelDto.ModelResponse> getPopularByDownloadList(int page, Optional<Long> userId) {
+        Pageable pageable = PageRequest.of(page, 10);
+        List<Model> models = modelRepository
+                .findAllByIsDeletedFalseOrderByDownloadCountDesc(pageable)
+                .getContent();
+
+        return models.stream()
+                .map(model -> {
+                    boolean purchaseAvailability = userId
+                            .map(uId -> !uId.equals(model.getAuthor().getId()) && !checkIfModelPurchased(uId, model.getId()))
+                            .orElse(true);
+                    return UserModelDto.ModelResponse.from(model, purchaseAvailability, model.isDownloadable());
+                })
+                .toList();
+    }
+
+    public List<UserModelDto.ModelResponse> getFreeModelList(int page, Optional<Long> userId) {
+        Pageable pageable = PageRequest.of(page, 10);
+        List<Model> models = modelRepository
+                .findAllByIsDeletedFalseAndPriceEqualsOrderByCreateDateDesc(0L, pageable)
+                .getContent();
+
+        return models.stream()
+                .map(model -> {
+                    boolean purchaseAvailability = userId
+                            .map(uId -> !uId.equals(model.getAuthor().getId()) && !checkIfModelPurchased(uId, model.getId()))
+                            .orElse(true);
+                    return UserModelDto.ModelResponse.from(model, purchaseAvailability, model.isDownloadable());
+                })
+                .toList();
+    }
+
+    // ✅ 유료 도면 목록
+    public List<UserModelDto.ModelResponse> getPaidModelList(int page, Optional<Long> userId) {
+        Pageable pageable = PageRequest.of(page, 10);
+        List<Model> models = modelRepository
+                .findAllByIsDeletedFalseAndPriceGreaterThanOrderByCreateDateDesc(0L, pageable)
+                .getContent();
+
+        return models.stream()
+                .map(model -> {
+                    boolean purchaseAvailability = userId
+                            .map(uId -> !uId.equals(model.getAuthor().getId()) && !checkIfModelPurchased(uId, model.getId()))
+                            .orElse(true);
+                    return UserModelDto.ModelResponse.from(model, purchaseAvailability, model.isDownloadable());
+                })
+                .toList();
+    }
+
 }
 
