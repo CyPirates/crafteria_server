@@ -1,9 +1,6 @@
 package com.example.crafteria_server.domain.user.controller;
 
-import com.example.crafteria_server.domain.user.dto.UserAddressDto;
-import com.example.crafteria_server.domain.user.dto.UserBasicInfoUpdateRequest;
-import com.example.crafteria_server.domain.user.dto.UserResponse;
-import com.example.crafteria_server.domain.user.dto.UserUpdateRequest;
+import com.example.crafteria_server.domain.user.dto.*;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.domain.user.service.UserInfoService;
 import com.example.crafteria_server.domain.user.service.UserService;
@@ -172,5 +169,14 @@ public class UserInfoController {
         User updatedUser = userInfoService.getCurrentUser(principalDetails.getUserId());
         List<UserAddressDto.UserAddressResponse> addresses = userService.getUserAddresses(updatedUser.getId());
         return JsonBody.of(200, "기본 정보 수정 성공", UserResponse.from(updatedUser, addresses, null));
+    }
+
+    @GetMapping("/authors/popular-by-sales")
+    @Operation(summary = "인기 작가(판매 건수 기준)", description = "총 판매 건수가 높은 순으로 작가 목록을 조회합니다. (작가 등록 유저만)")
+    public JsonBody<List<PopularAuthorDto>> getPopularAuthorsBySales(
+            @RequestParam(defaultValue = "0") int page
+    ) {
+        List<PopularAuthorDto> data = userService.getPopularAuthorsBySales(page);
+        return JsonBody.of(200, "성공", data);
     }
 }

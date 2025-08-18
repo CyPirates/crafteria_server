@@ -62,6 +62,7 @@ public class UserModelController {
     }*/
 
     @PostMapping("/purchase/{modelId}")
+    @Operation(summary = "도면 구매", description = "도면을 구매합니다.")
     public ResponseEntity<JsonBody<UserModelDto.ModelResponse>> purchaseModelWithCoupon(
             @AuthenticationPrincipal PrincipalDetails principal,
             @RequestBody ModelPurchaseRequest request) {
@@ -70,5 +71,37 @@ public class UserModelController {
         UserModelDto.ModelResponse response = modelService.purchaseModelWithCoupon(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(JsonBody.of(201, "도면 구매 성공", response));
+    }
+
+    @GetMapping("/list/popular-by-downloads")
+    @Operation(summary = "다운로드 기준 인기 도면 조회", description = "downloadCount가 높은 순으로 도면을 조회합니다.")
+    public JsonBody<List<UserModelDto.ModelResponse>> getPopularByDownloads(
+            @RequestParam(defaultValue = "0") int page,
+            @AuthenticationPrincipal PrincipalDetails principalDetails) {
+
+        Optional<Long> userId = Optional.ofNullable(principalDetails).map(PrincipalDetails::getUserId);
+        return JsonBody.of(200, "성공", modelService.getPopularByDownloadList(page, userId));
+    }
+
+    // ✅ 무료 도면 리스트
+    @GetMapping("/list/free")
+    @Operation(summary = "무료 도면 조회", description = "price=0 인 도면을 최근 업로드 순으로 조회합니다.")
+    public JsonBody<List<UserModelDto.ModelResponse>> getFreeModels(
+            @RequestParam(defaultValue = "0") int page,
+            @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        Optional<Long> userId = Optional.ofNullable(principalDetails).map(PrincipalDetails::getUserId);
+        return JsonBody.of(200, "성공", modelService.getFreeModelList(page, userId));
+    }
+
+    // ✅ 유료 도면 리스트
+    @GetMapping("/list/paid")
+    @Operation(summary = "유료 도면 조회", description = "price>0 인 도면을 최근 업로드 순으로 조회합니다.")
+    public JsonBody<List<UserModelDto.ModelResponse>> getPaidModels(
+            @RequestParam(defaultValue = "0") int page,
+            @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        Optional<Long> userId = Optional.ofNullable(principalDetails).map(PrincipalDetails::getUserId);
+        return JsonBody.of(200, "성공", modelService.getPaidModelList(page, userId));
     }
 }
