@@ -6,6 +6,7 @@ import com.example.crafteria_server.domain.user.repository.ModelSaleTransaction;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -71,6 +72,12 @@ public class UserResponse {
     @Schema(description = "판매 거래 내역", example = "[]")
     private List<ModelSaleTransaction> salesTransactions;
 
+    @Schema(description = "본인인증 여부", example = "true")
+    private boolean identityVerified;
+
+    @Schema(description = "본인인증 완료 시각", example = "2023-09-01T15:30:00")
+    private LocalDateTime identityVerifiedAt;
+
     public static UserResponse from(User user, List<UserAddressDto.UserAddressResponse> addresses , List<ModelSaleTransaction> salesTransactions) {
         return UserResponse.builder()
                 .id(user.getId())
@@ -92,6 +99,8 @@ public class UserResponse {
                 .banned(user.isBanned())
                 .banUntil(user.getBanUntil() != null ? user.getBanUntil().toString() : null)
                 .salesTransactions(salesTransactions)
+                .identityVerified(user.isIdentityVerified())
+                .identityVerifiedAt(user.getIdentityVerifiedAt())
                 .build();
     }
 }
