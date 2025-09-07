@@ -25,6 +25,23 @@ public class User extends BaseEntity {
     private String providerId;
     private String phoneNumber;
 
+    // ✅ 본인인증 고유 식별자
+    @Column(name = "ci", length = 128)
+    private String ci;
+
+    @Column(name = "di", length = 128)
+    private String di;
+
+    // ✅ 인증 상태/시각/최근 인증ID
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean identityVerified = false;
+
+    private LocalDateTime identityVerifiedAt;
+
+    @Column(length = 64)
+    private String lastIdentityVerificationId;
+
     @Column(nullable = true)
     private String password;
 
@@ -42,6 +59,10 @@ public class User extends BaseEntity {
 
     @Column(name = "ban_until")
     private LocalDateTime banUntil;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean banned = false;
 
     @Column(nullable = true)
     private String manufacturerName;
@@ -87,4 +108,6 @@ public class User extends BaseEntity {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserAddress> addresses = new ArrayList<>();
+
+
 }

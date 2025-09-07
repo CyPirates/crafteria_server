@@ -7,6 +7,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "model")
 @Getter
@@ -68,4 +71,9 @@ public class Model extends BaseEntity {
     @Column(nullable = false)
     @Builder.Default
     private boolean isDownloadable = true;
+
+    @OneToMany(mappedBy = "model", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sortOrder ASC")
+    @Builder.Default
+    private List<ModelAsset> assets = new ArrayList<>();
 }

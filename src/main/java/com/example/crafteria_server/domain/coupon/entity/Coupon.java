@@ -49,5 +49,8 @@ public class Coupon extends BaseEntity {
     @Column(nullable = false)
     private int maxPerUser; // 유저당 발급 가능 횟수
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "template_id")
+    private CouponTemplate template;
 
 }

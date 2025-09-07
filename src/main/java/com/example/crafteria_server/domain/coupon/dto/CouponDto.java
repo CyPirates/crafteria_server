@@ -3,15 +3,16 @@ package com.example.crafteria_server.domain.coupon.dto;
 import com.example.crafteria_server.domain.coupon.entity.CouponType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 public class CouponDto {
     @Getter
     @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class CreateRequest {
         @Schema(description = "사용자 ID", example = "1")
         private Long userId;
@@ -31,12 +32,15 @@ public class CouponDto {
         @Schema(description = "발급일", example = "2023-10-01T10:00:00")
         private LocalDateTime expiredAt;
 
-        @Schema(description = "쿠폰 타입", example = "MODEL_PURCHASE , ORDER_PURCHASE")
+        @Schema(description = "쿠폰 타입", example = "MODEL_PURCHASE")
         private CouponType type; // <== 추가
     }
 
     @Getter
+    @Setter
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Response {
         @Schema(description = "쿠폰 ID", example = "1")
         private Long id;
@@ -62,7 +66,7 @@ public class CouponDto {
         @Schema(description = "쿠폰 사용 여부", example = "false")
         private boolean used;
 
-        @Schema(description = "쿠폰 타입", example = "MODEL_PURCHASE , ORDER_PURCHASE")
+        @Schema(description = "쿠폰 타입", example = "MODEL_PURCHASE")
         private CouponType type; // <== 추가
     }
 

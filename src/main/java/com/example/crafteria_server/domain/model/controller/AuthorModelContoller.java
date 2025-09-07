@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -68,5 +69,15 @@ public class AuthorModelContoller {
 
         modelService.deleteModel(modelId, principalDetails.getUserId());
         return JsonBody.of(200, "도면이 삭제되었습니다.", null);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/admin/delete/{modelId}")
+    @Operation(summary = "도면 강제 삭제 (관리자용)", description = "관리자가 도면을 강제로 삭제합니다.")
+    public JsonBody<Void> forceDeleteModelByAdmin(
+            @PathVariable Long modelId) {
+
+        modelService.forceDeleteModelByAdmin(modelId);
+        return JsonBody.of(200, "도면이 관리자에 의해 삭제되었습니다.", null);
     }
 }

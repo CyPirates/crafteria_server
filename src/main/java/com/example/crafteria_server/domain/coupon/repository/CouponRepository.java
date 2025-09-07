@@ -11,4 +11,9 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
     List<Coupon> findByUserIdAndUsedFalseAndExpiredAtAfter(Long userId, LocalDateTime now);
 
     List<Coupon> findByUserId(Long userId);
+
+    int countByUserIdAndTemplateId(Long userId, Long templateId);
+
+    boolean existsByCode(String code);
+
 }

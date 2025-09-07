@@ -1,18 +1,16 @@
 package com.example.crafteria_server.domain.user.service;
 
-import com.example.crafteria_server.domain.user.dto.LoginDto;
-import com.example.crafteria_server.domain.user.dto.RegisterRequest;
-import com.example.crafteria_server.domain.user.dto.UserAddressDto;
-import com.example.crafteria_server.domain.user.dto.UserUpdateRequest;
-import com.example.crafteria_server.domain.user.entity.DashboardStatus;
-import com.example.crafteria_server.domain.user.entity.Role;
-import com.example.crafteria_server.domain.user.entity.User;
-import com.example.crafteria_server.domain.user.entity.UserAddress;
+import com.example.crafteria_server.domain.user.dto.*;
+import com.example.crafteria_server.domain.user.entity.*;
+import com.example.crafteria_server.domain.user.repository.AuthorRepository;
 import com.example.crafteria_server.domain.user.repository.UserRepository;
 import com.example.crafteria_server.global.security.PrincipalDetails;
 import com.example.crafteria_server.global.security.TokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -38,6 +36,7 @@ public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenProvider tokenProvider;
+    private final AuthorRepository authorRepository;
 
     public void registerDashboardUser(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -90,9 +89,6 @@ public class UserService implements UserDetailsService {
             throw new BadCredentialsException("비밀번호가 일치하지 않습니다.");
         }
 
-        if (user.getBanUntil() != null && user.getBanUntil().isAfter(LocalDateTime.now())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "계정이 정지된 상태입니다. 정지 해제일: " + user.getBanUntil());
-        }
 
         if (user.getRole() == Role.DASHBOARD && user.getDashboardStatus() != DashboardStatus.APPROVED) {
             throw new UsernameNotFoundException("승인되지 않은 계정입니다.");
@@ -142,7 +138,9 @@ public class UserService implements UserDetailsService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+
         user.setBanUntil(until);
+        user.setBanned(true); // ✅ banned true 설정
         userRepository.save(user);
     }
 
@@ -154,28 +152,33 @@ public class UserService implements UserDetailsService {
         int newSellerLevel = 0;
 
         // 일반 사용자 레벨 기준
-        if (user.getTotalPurchaseAmount() >= 10000 || user.getTotalPrintedAmount() >= 5000) {
+        if (user.getTotalPurchaseAmount() >= 1000000 || user.getTotalPrintedAmount() >= 100) {
             newUserLevel = 5;
-        } else if (user.getTotalPurchaseAmount() >= 5000 || user.getTotalPrintedAmount() >= 2500) {
+        } else if (user.getTotalPurchaseAmount() >= 750000 || user.getTotalPrintedAmount() >= 75) {
             newUserLevel = 4;
-        } else if (user.getTotalPurchaseAmount() >= 2500 || user.getTotalPrintedAmount() >= 1250) {
+        } else if (user.getTotalPurchaseAmount() >= 500000 || user.getTotalPrintedAmount() >= 50) {
             newUserLevel = 3;
-        } else if (user.getTotalPurchaseAmount() >= 1250 || user.getTotalPrintedAmount() >= 625) {
+        } else if (user.getTotalPurchaseAmount() >= 100000  || user.getTotalPrintedAmount() >= 10) {
             newUserLevel = 2;
-        } else if (user.getTotalPurchaseAmount() >= 1 || user.getTotalPrintedAmount() >= 1) {
+        } else if (user.getTotalPurchaseAmount() >= 1000 || user.getTotalPrintedAmount() >= 1) {
             newUserLevel = 1;
         }
 
         // 판매자 레벨 기준
-        if (user.getTotalSalesAmount() >= 100000 || user.getTotalUploadCount() >= 100) {
+        if (user.getTotalSalesAmount() >= 10000000 || user.getTotalPrintedAmount() >= 50000000 ||
+                user.getTotalPrintedCount() >= 1000 || user.getTotalSalesCount() >= 1000 || user.getTotalUploadCount() >=200 ) {
             newSellerLevel = 5;
-        } else if (user.getTotalSalesAmount() >= 50000 || user.getTotalUploadCount() >= 50) {
+        } else if (user.getTotalSalesAmount() >= 5000000 || user.getTotalPrintedAmount() >= 25000000 ||
+                user.getTotalPrintedCount() >= 500 || user.getTotalSalesCount() >= 500 || user.getTotalUploadCount() >=100) {
             newSellerLevel = 4;
-        } else if (user.getTotalSalesAmount() >= 25000 || user.getTotalUploadCount() >= 25) {
+        } else if (user.getTotalSalesAmount() >= 2500000 || user.getTotalPrintedAmount() >= 12500000 ||
+                user.getTotalPrintedCount() >= 250 || user.getTotalSalesCount() >= 250 || user.getTotalUploadCount() >=50) {
             newSellerLevel = 3;
-        } else if (user.getTotalSalesAmount() >= 12500 || user.getTotalUploadCount() >= 10) {
+        } else if (user.getTotalSalesAmount() >= 1000000 || user.getTotalPrintedAmount() >= 1000000 ||
+                user.getTotalPrintedCount() >= 100 || user.getTotalSalesCount() >= 100 || user.getTotalUploadCount() >=25) {
             newSellerLevel = 2;
-        } else if (user.getTotalSalesAmount() >= 1 || user.getTotalUploadCount() >= 1) {
+        } else if (user.getTotalSalesAmount() >= 1000 || user.getTotalPrintedAmount() >= 1000 ||
+                user.getTotalPrintedCount() >= 1 || user.getTotalSalesCount() >= 1 || user.getTotalUploadCount() >=1) {
             newSellerLevel = 1;
         }
 
@@ -290,6 +293,52 @@ public class UserService implements UserDetailsService {
                 .detailAddress(address.getDetailAddress())
                 .isDefault(address.isDefault())
                 .build();
+    }
+
+    public User checkAndLiftBan(User user) {
+        if (user.isBanned()
+                && user.getBanUntil() != null
+                && user.getBanUntil().isBefore(LocalDateTime.now())) {
+            user.setBanUntil(null);
+            user.setBanned(false);
+            userRepository.save(user);
+        }
+        return user;
+    }
+
+    @Transactional
+    public void updateBasicUserInfo(Long userId, UserBasicInfoUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+
+        // username 중복 체크 (자기 자신 제외)
+        if (!user.getUsername().equals(request.getUsername())
+                && userRepository.existsByUsername(request.getUsername())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 사용 중인 닉네임입니다.");
+        }
+
+        // phoneNumber 중복 체크 (자기 자신 제외)
+        if (!request.getPhoneNumber().equals(user.getPhoneNumber())
+                && userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 사용 중인 전화번호입니다.");
+        }
+
+        user.setUsername(request.getUsername());
+        user.setPhoneNumber(request.getPhoneNumber());
+
+        userRepository.save(user);
+    }
+
+    public List<PopularAuthorDto> getPopularAuthorsBySales(int page) {
+        Pageable pageable = PageRequest.of(page, 10);
+        Page<Author> result = authorRepository.findPopularAuthorsBySales(pageable);
+
+        List<PopularAuthorDto> list = result.getContent().stream()
+                .map(PopularAuthorDto::from)
+                .toList();
+
+        log.info("[인기 작가 조회] page={}, size={}, returned={}", page, pageable.getPageSize(), list.size());
+        return list;
     }
 
 

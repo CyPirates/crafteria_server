@@ -1,8 +1,6 @@
 package com.example.crafteria_server.domain.user.controller;
 
-import com.example.crafteria_server.domain.user.dto.UserAddressDto;
-import com.example.crafteria_server.domain.user.dto.UserResponse;
-import com.example.crafteria_server.domain.user.dto.UserUpdateRequest;
+import com.example.crafteria_server.domain.user.dto.*;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.domain.user.service.UserInfoService;
 import com.example.crafteria_server.domain.user.service.UserService;
@@ -41,9 +39,10 @@ public class UserInfoController {
         if (principalDetails == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
+
         User user = userInfoService.getCurrentUser(principalDetails.getUserId());
-        List<UserAddressDto.UserAddressResponse> addresses = userService.getUserAddresses(user.getId());
-        return JsonBody.of(200, "성공", UserResponse.from(user, addresses));
+        UserResponse response = userInfoService.toUserResponse(user);
+        return JsonBody.of(200, "성공", response);
     }
 
     @PatchMapping("/me")
@@ -60,25 +59,27 @@ public class UserInfoController {
                 principalDetails.getUserId(), request.getUsername(), request.getRealname());
 
         userService.updateBasicUserInfo(principalDetails.getUserId(), request);
+
         User updatedUser = userInfoService.getCurrentUser(principalDetails.getUserId());
-        List<UserAddressDto.UserAddressResponse> addresses = userService.getUserAddresses(updatedUser.getId());
-        return JsonBody.of(200, "성공", UserResponse.from(updatedUser, addresses));
+        UserResponse response = userInfoService.toUserResponse(updatedUser);
+        return JsonBody.of(200, "성공", response);
     }
 
     @GetMapping("/{userId}")
     @Operation(summary = "특정 사용자 조회", description = "특정 사용자의 정보를 조회합니다.")
     public JsonBody<UserResponse> getUserById(@PathVariable Long userId) {
         User user = userInfoService.getUserById(userId);
-        List<UserAddressDto.UserAddressResponse> addresses = userService.getUserAddresses(user.getId());
-        return JsonBody.of(200, "성공", UserResponse.from(user, addresses));
+        UserResponse response = userInfoService.toUserResponse(user);
+        return JsonBody.of(200, "성공", response);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     @Operation(summary = "모든 사용자 조회", description = "모든 사용자의 정보를 조회합니다.")
     public JsonBody<List<UserResponse>> getAllUsers() {
         List<User> users = userInfoService.getAllUsers();
         List<UserResponse> responses = users.stream()
-                .map(user -> UserResponse.from(user, userService.getUserAddresses(user.getId())))
+                .map(userInfoService::toUserResponse)
                 .toList();
         return JsonBody.of(200, "성공", responses);
     }
@@ -149,5 +150,33 @@ public class UserInfoController {
                                     @AuthenticationPrincipal PrincipalDetails principalDetails) throws AccessDeniedException {
         userService.banUser(userId, until, principalDetails);
         return JsonBody.of(200, "사용자가 " + until + "까지 정지되었습니다.", null);
+    }
+
+    @PatchMapping("/me/basic")
+    @Operation(summary = "사용자 기본 정보 수정", description = "사용자의 닉네임과 전화번호를 수정합니다.")
+    public JsonBody<UserResponse> updateBasicUserInfo(
+            @AuthenticationPrincipal PrincipalDetails principalDetails,
+            @RequestBody @Valid UserBasicInfoUpdateRequest request) {
+
+        if (principalDetails == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        log.info("기본 정보 수정 요청 - 유저ID: {}, username: {}, phoneNumber: {}",
+                principalDetails.getUserId(), request.getUsername(), request.getPhoneNumber());
+
+        userService.updateBasicUserInfo(principalDetails.getUserId(), request);
+        User updatedUser = userInfoService.getCurrentUser(principalDetails.getUserId());
+        List<UserAddressDto.UserAddressResponse> addresses = userService.getUserAddresses(updatedUser.getId());
+        return JsonBody.of(200, "기본 정보 수정 성공", UserResponse.from(updatedUser, addresses, null));
+    }
+
+    @GetMapping("/authors/popular-by-sales")
+    @Operation(summary = "인기 작가(판매 건수 기준)", description = "총 판매 건수가 높은 순으로 작가 목록을 조회합니다. (작가 등록 유저만)")
+    public JsonBody<List<PopularAuthorDto>> getPopularAuthorsBySales(
+            @RequestParam(defaultValue = "0") int page
+    ) {
+        List<PopularAuthorDto> data = userService.getPopularAuthorsBySales(page);
+        return JsonBody.of(200, "성공", data);
     }
 }
