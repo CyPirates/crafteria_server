@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Optional;
 
 public class UserModelDto {
@@ -62,9 +63,6 @@ public class UserModelDto {
         @Schema(description = "모델 높이 사이즈", example = "100")
         private double heightSize;
 
-        @NotNull
-        @Schema(description = "모델 파일 URL", example = "http://localhost:8080/model/1")
-        private String modelFileUrl;
 
         @NotNull
         @Schema(description = "구매 가능 여부", example = "true")
@@ -81,12 +79,14 @@ public class UserModelDto {
         @Schema(description = "도면 다운로드 가능 여부", example = "true")
         private boolean downloadable;
 
+        @Schema(description = "STL 파일 URL 리스트")
+        private List<String> modelFileUrls;
+
 
         public static ModelResponse from(Model model, boolean purchaseAvailability, boolean downloadable) {
-            String modelFileUrl = Optional.ofNullable(model.getModelFile())
-                    .map(File::getUrl)
-                    .orElse(null); // null-safe
-
+            List<String> urls = model.getAssets().stream()
+                    .map(asset -> asset.getFile().getUrl())
+                    .toList();
 
             return ModelResponse.builder()
                     .id(model.getId())
@@ -100,30 +100,36 @@ public class UserModelDto {
                     .widthSize(model.getWidthSize())
                     .lengthSize(model.getLengthSize())
                     .heightSize(model.getHeightSize())
-                    .category(model.getCategory())
                     .purchaseAvailability(purchaseAvailability)
-                    .modelFileUrl(modelFileUrl)
+                    .category(model.getCategory())
                     .downloadable(downloadable)
+                    .modelFileUrls(urls)
                     .build();
         }
 
         public static ModelResponse from(ModelPurchase modelPurchase, boolean purchaseAvailability) {
             Model model = modelPurchase.getModel();
+            List<String> urls = model.getAssets().stream()
+                    .map(asset -> asset.getFile().getUrl())
+                    .toList();
+
             return ModelResponse.builder()
-                    .id(modelPurchase.getModel().getId())
-                    .author(AuthorDto.AuthorResponse.from(modelPurchase.getModel().getAuthor()))
-                    .name(modelPurchase.getModel().getName())
-                    .description(modelPurchase.getModel().getDescription())
-                    .rating(modelPurchase.getModel().getRating())
-                    .price(modelPurchase.getModel().getPrice())
-                    .viewCount(modelPurchase.getModel().getViewCount())
-                    .downloadCount(modelPurchase.getModel().getDownloadCount())
-                    .widthSize(modelPurchase.getModel().getWidthSize())
-                    .lengthSize(modelPurchase.getModel().getLengthSize())
-                    .heightSize(modelPurchase.getModel().getHeightSize())
-                    .modelFileUrl(modelPurchase.getModel().getModelFile().getUrl())
+                    .id(model.getId())
+                    .author(AuthorDto.AuthorResponse.from(model.getAuthor()))
+                    .name(model.getName())
+                    .description(model.getDescription())
+                    .rating(model.getRating())
+                    .price(model.getPrice())
+                    .viewCount(model.getViewCount())
+                    .downloadCount(model.getDownloadCount())
+                    .widthSize(model.getWidthSize())
+                    .lengthSize(model.getLengthSize())
+                    .heightSize(model.getHeightSize())
+                    .purchaseAvailability(purchaseAvailability)
+                    .category(model.getCategory())
                     .paymentId(modelPurchase.getPaymentId())
                     .downloadable(model.isDownloadable())
+                    .modelFileUrls(urls)
                     .build();
         }
     }
@@ -158,9 +164,6 @@ public class UserModelDto {
         @Schema(description = "모델 높이 사이즈", example = "100")
         private double heightSize;
 
-        @NotNull
-        @Schema(description = "모델 파일", format = "binary")
-        private MultipartFile modelFile;
 
         @NotNull
         @Schema(description = "모델 카테고리")
@@ -168,5 +171,12 @@ public class UserModelDto {
 
         @Schema(description = "도면 다운로드 가능 여부", example = "true")
         private boolean downloadable;
+
+        @io.swagger.v3.oas.annotations.media.ArraySchema(
+                schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", format = "binary"),
+                minItems = 1, maxItems = 100
+        )
+        @Schema(description = "STL 파일들 (최대 100개)")
+        private MultipartFile[] modelFiles;
     }
 }

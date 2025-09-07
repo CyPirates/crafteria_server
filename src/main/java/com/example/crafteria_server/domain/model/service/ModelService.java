@@ -9,6 +9,7 @@ import com.example.crafteria_server.domain.file.service.FileService;
 import com.example.crafteria_server.domain.model.dto.ModelPurchaseRequest;
 import com.example.crafteria_server.domain.model.dto.UserModelDto;
 import com.example.crafteria_server.domain.model.entity.Model;
+import com.example.crafteria_server.domain.model.entity.ModelAsset;
 import com.example.crafteria_server.domain.model.entity.ModelPurchase;
 import com.example.crafteria_server.domain.model.repository.ModelPurchaseRepository;
 import com.example.crafteria_server.domain.model.repository.ModelRepository;
@@ -25,11 +26,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -76,25 +76,20 @@ public class ModelService {
     }
 
     public UserModelDto.ModelResponse uploadModel(Long userId, UserModelDto.ModelUploadRequest request) {
-        User user = userRepository.findById(userId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
 
-        Author author = authorRepository.findById(user.getId()).orElseGet(() -> Author.builder()
-                .user(user)
-                .id(user.getId())
-                .realname(user.getRealname())
-                .rating(5)
-                .modelCount(0)
-                .viewCount(0)
-                .build());
-
-        if (author.getRealname() == null) {
-            author.setRealname(user.getRealname());
-        }
-
+        Author author = authorRepository.findById(user.getId())
+                .orElseGet(() -> Author.builder()
+                        .user(user)
+                        .id(user.getId())
+                        .realname(user.getRealname())
+                        .rating(5)
+                        .modelCount(0)
+                        .viewCount(0)
+                        .build());
         authorRepository.save(author);
 
-        File modelFile = fileService.saveModel(request.getModelFile());
         Model newModel = Model.builder()
                 .author(author)
                 .name(request.getName())
@@ -107,31 +102,34 @@ public class ModelService {
                 .lengthSize(request.getLengthSize())
                 .heightSize(request.getHeightSize())
                 .category(request.getCategory())
-                .modelFile(modelFile)
                 .isDownloadable(request.isDownloadable())
+                .assets(new ArrayList<>())
                 .build();
+
+        // ✅ STL 여러 개 저장
+        MultipartFile[] files = Optional.ofNullable(request.getModelFiles()).orElse(new MultipartFile[0]);
+        if (files.length == 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "STL 파일을 1개 이상 업로드하세요.");
+        if (newModel.getAssets() == null) newModel.setAssets(new ArrayList<>());
+
+        int idx = 0;
+        for (MultipartFile stl : files) {
+            if (stl == null || stl.isEmpty()) continue;
+
+            requireStlOrThrow(stl);                 // ✅ 여기서 관대하게 검사
+            File saved = fileService.saveModel(stl); // 기존 saveModel 재사용
+
+            ModelAsset asset = ModelAsset.builder()
+                    .model(newModel)
+                    .file(saved)
+                    .sortOrder(idx++)
+                    .build();
+            newModel.getAssets().add(asset);
+        }
 
         modelRepository.save(newModel);
 
-        // 업로드 수 증가 및 판매자 레벨 갱신
-        user.setTotalUploadCount(user.getTotalUploadCount() + 1);
-        userService.updateUserLevel(user);
-        userRepository.save(user);
-
-        log.info("[도면 업로드 처리] 유저ID: {}, 업로드 후 총 업로드 수: {}", userId, user.getTotalUploadCount());
-
-        log.info("[도면 업로드] userId={}, modelName='{}', price={}, downloadable={}, category={}, fileName={}",
-                userId,
-                request.getName(),
-                request.getPrice(),
-                request.isDownloadable(),
-                request.getCategory(),
-                request.getModelFile().getOriginalFilename()
-        );
-
         return UserModelDto.ModelResponse.from(newModel, false, newModel.isDownloadable());
     }
-
     public List<UserModelDto.ModelResponse> getMyDownloadedModelList(int page, Long userId) {
         Pageable pageable = PageRequest.of(page, 10);
         Page<ModelPurchase> purchases = modelPurchaseRepository
@@ -209,15 +207,14 @@ public class ModelService {
     }
 
     public UserModelDto.ModelResponse updateModel(Long modelId, Long userId, UserModelDto.ModelUploadRequest request) {
-        Model model = modelRepository.findById(modelId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
+        Model model = modelRepository.findById(modelId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
 
         if (!model.getAuthor().getId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "이 도면을 수정할 권한이 없습니다.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "수정 권한이 없습니다.");
         }
 
-        log.info("[도면 수정 - 수정 전] modelId={}, name={}, price={}, category={}, downloadable={}",
-                model.getId(), model.getName(), model.getPrice(), model.getCategory(), model.isDownloadable());
+
 
         model.setName(request.getName());
         model.setDescription(request.getDescription());
@@ -228,18 +225,31 @@ public class ModelService {
         model.setCategory(request.getCategory());
         model.setDownloadable(request.isDownloadable());
 
-        if (request.getModelFile() != null) {
-            File modelFile = fileService.saveModel(request.getModelFile());
-            model.setModelFile(modelFile);
-        }
+        MultipartFile[] files = Optional.ofNullable(request.getModelFiles())
+                .orElse(new MultipartFile[0]);
 
-        log.info("[도면 수정 - 수정 후] modelId={}, name={}, price={}, category={}, downloadable={}",
-                model.getId(), model.getName(), model.getPrice(), model.getCategory(), model.isDownloadable());
+        // ✅ 기존 STL 파일들 교체
+        if (model.getAssets() == null) model.setAssets(new ArrayList<>());
+        model.getAssets().clear();
+
+        int idx = 0;
+        for (MultipartFile stl : files) {
+            if (stl == null || stl.isEmpty()) continue;
+
+            requireStlOrThrow(stl);                  // ✅ 동일한 검증 로직
+            File saved = fileService.saveModel(stl);
+
+            ModelAsset asset = ModelAsset.builder()
+                    .model(model)
+                    .file(saved)
+                    .sortOrder(idx++)
+                    .build();
+            model.getAssets().add(asset);
+        }
 
         modelRepository.save(model);
         return UserModelDto.ModelResponse.from(model, false, model.isDownloadable());
     }
-
     public void deleteModel(Long modelId, Long userId) {
         Model model = modelRepository.findById(modelId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
@@ -388,6 +398,38 @@ public class ModelService {
                     return UserModelDto.ModelResponse.from(model, purchaseAvailability, model.isDownloadable());
                 })
                 .toList();
+    }
+
+    private boolean looksLikeStl(MultipartFile file) {
+        if (file == null || file.isEmpty()) return false;
+
+        // 1) 이름 기반 (가끔 비어있거나 uuid일 수 있음)
+        String name = Optional.ofNullable(file.getOriginalFilename()).orElse("").toLowerCase(Locale.ROOT);
+        if (name.endsWith(".stl")) return true;
+
+        // 2) 컨텐트 타입 기반 (브라우저가 종종 octet-stream으로 보냄)
+        String ct = Optional.ofNullable(file.getContentType()).orElse("").toLowerCase(Locale.ROOT);
+        if (ct.contains("stl") || ct.equals("application/sla") || ct.equals("model/stl") || ct.equals("application/octet-stream")) {
+            return true;
+        }
+
+        // 3) 헤더 휴리스틱 (ASCII: "solid"로 시작 / Binary: 84바이트 이상)
+        try (var in = file.getInputStream()) {
+            byte[] header = in.readNBytes(512);
+            if (header.length >= 5) {
+                String headStr = new String(header, java.nio.charset.StandardCharsets.US_ASCII);
+                if (headStr.startsWith("solid")) return true; // ASCII STL
+            }
+            if (header.length >= 84) return true; // 바이너리 STL 최소 헤더
+        } catch (Exception ignore) {}
+
+        return false;
+    }
+
+    private void requireStlOrThrow(MultipartFile file) {
+        if (!looksLikeStl(file)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "STL(.stl) 파일만 업로드할 수 있습니다.");
+        }
     }
 
 }
