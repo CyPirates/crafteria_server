@@ -149,7 +149,7 @@ public class OrderService {
         Order order = orderRepository.findByUserIdAndId(userId, orderId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
 
-        if (!order.getStatus().equals(OrderStatus.ORDERED)) {
+        if (!(order.getStatus().equals(OrderStatus.ORDERED) || order.getStatus().equals(OrderStatus.PAID))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "취소할 수 없는 상태입니다.");
         }
 
