@@ -16,6 +16,8 @@ import com.example.crafteria_server.domain.order.entity.Order;
 import com.example.crafteria_server.domain.order.entity.OrderItem;
 import com.example.crafteria_server.domain.order.entity.OrderStatus;
 import com.example.crafteria_server.domain.order.repository.OrderRepository;
+import com.example.crafteria_server.domain.review.entity.Review;
+import com.example.crafteria_server.domain.review.repository.ReviewRepository;
 import com.example.crafteria_server.domain.technology.entity.Technology;
 import com.example.crafteria_server.domain.technology.repository.TechnologyRepository;
 import com.example.crafteria_server.domain.user.entity.User;
@@ -32,10 +34,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,20 +52,35 @@ public class OrderService {
     private final UserService userService;
     private final CouponService couponService;
     private final CouponRepository couponRepository;
+    private final ReviewRepository reviewRepository;
 
     public List<OrderDto.OrderResponse> getMyOrderList(Long userId, int page) {
         PageRequest pageable = PageRequest.of(page, 10);
         List<Order> orders = orderRepository.findAllByUserIdExcludingOrdered(userId, pageable);
+
+        List<Long> orderIds = orders.stream().map(Order::getId).toList();
+        Map<Long, Review> reviewMap = reviewRepository.findByUser_IdAndOrder_IdIn(userId, orderIds)
+                .stream().collect(Collectors.toMap(r -> r.getOrder().getId(), r -> r));
+
         return orders.stream()
-                .map(OrderDto.OrderResponse::from)
+                .map(order -> {
+                    Review review = reviewMap.get(order.getId());
+                    return OrderDto.OrderResponse.from(order,
+                            review != null,
+                            review != null ? review.getId() : null);
+                })
                 .collect(Collectors.toList());
     }
 
     public OrderDto.OrderResponse getOrderDetail(Long userId, Long orderId) {
-        Order order = orderRepository.findByUserIdAndId(userId, orderId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
+        Order order = orderRepository.findByUserIdAndId(userId, orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
 
-        return OrderDto.OrderResponse.from(order);
+        Review review = reviewRepository.findByUser_IdAndOrder_Id(userId, orderId).orElse(null);
+
+        return OrderDto.OrderResponse.from(order,
+                review != null,
+                review != null ? review.getId() : null);
     }
 
     public OrderDto.OrderResponse createOrder(Long userId, OrderDto.OrderRequest request, List<MultipartFile> files) {

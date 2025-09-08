@@ -44,7 +44,17 @@ public class ReviewService {
         Order order = orderRepository.findById(requestDto.getOrderId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
 
-        if (order.getReview() != null) {
+        if (!order.getStatus().equals(OrderStatus.DELIVERED)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "리뷰는 배송 완료(DELIVERED)된 주문에만 작성할 수 있습니다.");
+        }
+
+        // ✅ 내 주문인지 확인(보안)
+        if (!order.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인의 주문에 대해서만 리뷰를 작성할 수 있습니다.");
+        }
+
+        // ✅ 중복 리뷰 방지 (레거시 단일 매핑 + 리포지토리 검증)
+        if (order.getReview() != null || reviewRepository.existsByUser_IdAndOrder_Id(userId, order.getId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이 주문에 대한 리뷰가 이미 존재합니다.");
         }
 
@@ -67,11 +77,13 @@ public class ReviewService {
                 .build();
 
         review = reviewRepository.save(review);
-        order.setReview(review);  // 주문에 리뷰 연결
+
+        // 레거시 1:1 연계 유지
+        order.setReview(review);
         orderRepository.save(order);
 
-        log.info("리뷰 작성: userId={}, orderId={}, manufacturerId={}, rating={}, content={}",
-                userId, order.getId(), manufacturer.getId(), requestDto.getRating(), requestDto.getContent());
+        log.info("리뷰 작성: userId={}, orderId={}, manufacturerId={}, rating={}",
+                userId, order.getId(), manufacturer.getId(), requestDto.getRating());
 
         return ReviewDto.ReviewResponseDto.from(review);
     }
