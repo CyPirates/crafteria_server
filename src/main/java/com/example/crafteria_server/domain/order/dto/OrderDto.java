@@ -77,6 +77,12 @@ public class OrderDto {
         @Schema(description = "배송 정보", example = "배송 정보")
         private DeliveryDto.DeliveryResponse delivery;
 
+        @Schema(description = "리뷰 작성 여부", example = "true")
+        private boolean reviewed;
+
+        @Schema(description = "리뷰 ID (작성된 경우만)", example = "123", nullable = true)
+        private Long reviewId;
+
         public static OrderResponse from(Order order) {
             Delivery delivery = order.getDelivery();
             return OrderResponse.builder()
@@ -105,8 +111,17 @@ public class OrderDto {
                                     .build())
                             .collect(Collectors.toList()))
                     .orderDate(order.getCreateDate())
+                    .reviewed(order.isReviewed())
+                    .reviewId(order.isReviewed() && order.getReview() != null ? order.getReview().getId() : null)
                     .delivery(delivery != null ? DeliveryDto.DeliveryResponse.from(delivery) : null)
                     .build();
+        }
+
+        public static OrderResponse from(Order order, boolean reviewed, Long reviewId) {
+            OrderResponse dto = from(order);
+            dto.setReviewed(reviewed);
+            dto.setReviewId(reviewId);
+            return dto;
         }
     }
 
