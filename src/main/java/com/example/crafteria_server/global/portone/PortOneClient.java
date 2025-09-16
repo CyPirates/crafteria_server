@@ -1,5 +1,7 @@
 package com.example.crafteria_server.global.portone;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.micrometer.common.lang.Nullable;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +56,16 @@ public class PortOneClient {
                 .bodyToMono(IdentityVerificationDto.class);
     }
 
+    public Mono<String> getRaw(String id, @Nullable String storeId) {
+        return portOneWebClient.get()
+                .uri(uri -> uri.path("/identity-verifications/{id}")
+                        .queryParamIfPresent("storeId", Optional.ofNullable(storeId))
+                        .build(id))
+                .headers(this::applyAuth)
+                .retrieve()
+                .bodyToMono(String.class);
+    }
+
     /* ===== DTOs ===== */
 
     @Data
@@ -81,25 +93,53 @@ public class PortOneClient {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class IdentityVerificationDto {
-        private String id;            // identityVerificationId
-        private String status;        // READY | FAILED | VERIFIED
-        private VerifiedIdentityDto identityVerification; // VERIFIED일 때
-        private Map<String, Object> failure; // 실패사유 등
+        private String id;
+        private String status;
+
+        // v1 (과거 응답)
+        @JsonAlias({"identityVerification", "identity_verification"})
+        private VerifiedIdentityDto identityVerification;
+
+        // v2 (현재 응답)
+        private VerifiedCustomer verifiedCustomer;
+
+        @JsonAlias({"verifiedAt", "verified_at"})
+        private String verifiedAt;
+
+        // 필요 시 기타 필드들…
+        private Object channel;
+        private String pgTxId;
+        private String pgRawResponse;
+        private String version;
     }
 
     @Data
-    public static class VerifiedIdentityDto {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class VerifiedCustomer {
         private String id;
-        private String status;        // VERIFIED
         private String name;
-        private String phoneNumber;
-        private String birth;
-        private String gender;
-        private Boolean foreigner;
+        private String birthDate;   // "1997-10-21"
+        private String gender;      // "MALE" / "FEMALE" …
         private String ci;
         private String di;
-        private String operator;
-        private String verifiedAt;    // ISO-8601
+    }
+
+    /** 서비스에서 최종적으로 쓰는 통합 형태(우리 프로젝트 내부용) */
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class VerifiedIdentityDto {
+        private String id;            // identity-verification-...
+        private String status;        // VERIFIED
+        private String name;
+        private String phoneNumber;   // v2에는 없을 수 있음 → null 허용
+        private String birth;         // "19971021" 로 변환
+        private String gender;
+        private Boolean foreigner;    // v2 응답에 없으면 null 허용
+        private String ci;
+        private String di;
+        private String operator;      // 없으면 null 허용
+        private String verifiedAt;    // iso string
     }
 }
