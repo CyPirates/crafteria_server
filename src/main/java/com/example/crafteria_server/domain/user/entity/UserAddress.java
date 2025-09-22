@@ -27,6 +27,9 @@ public class UserAddress {
     @Column(nullable = false)
     private boolean isDefault;
 
+    @Column(nullable = false, length = 16)
+    private String postalCode;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;

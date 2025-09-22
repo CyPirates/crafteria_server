@@ -215,6 +215,7 @@ public class UserService implements UserDetailsService {
         address.setLabel(dto.getLabel());
         address.setBaseAddress(dto.getBaseAddress());
         address.setDetailAddress(dto.getDetailAddress());
+        address.setPostalCode(dto.getPostalCode());
 
         userRepository.save(user);
 
@@ -226,6 +227,7 @@ public class UserService implements UserDetailsService {
                 .baseAddress(address.getBaseAddress())
                 .detailAddress(address.getDetailAddress())
                 .isDefault(address.isDefault())
+                .postalCode(address.getPostalCode())
                 .build();
     }
 
@@ -249,6 +251,7 @@ public class UserService implements UserDetailsService {
                         .baseAddress(a.getBaseAddress())
                         .detailAddress(a.getDetailAddress())
                         .isDefault(a.isDefault())
+                        .postalCode(a.getPostalCode())
                         .build())
                 .toList();
     }
@@ -279,6 +282,7 @@ public class UserService implements UserDetailsService {
                 .detailAddress(dto.getDetailAddress())
                 .isDefault(dto.isDefault())
                 .user(user)
+                .postalCode(dto.getPostalCode())
                 .build();
 
         user.getAddresses().add(address);
@@ -292,6 +296,7 @@ public class UserService implements UserDetailsService {
                 .baseAddress(address.getBaseAddress())
                 .detailAddress(address.getDetailAddress())
                 .isDefault(address.isDefault())
+                .postalCode(address.getPostalCode())
                 .build();
     }
 
