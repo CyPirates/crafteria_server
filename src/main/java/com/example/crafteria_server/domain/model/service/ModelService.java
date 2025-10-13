@@ -10,6 +10,7 @@ import com.example.crafteria_server.domain.model.dto.ModelPurchaseRequest;
 import com.example.crafteria_server.domain.model.dto.UserModelDto;
 import com.example.crafteria_server.domain.model.entity.Model;
 import com.example.crafteria_server.domain.model.entity.ModelAsset;
+import com.example.crafteria_server.domain.model.entity.ModelDescriptionImage;
 import com.example.crafteria_server.domain.model.entity.ModelPurchase;
 import com.example.crafteria_server.domain.model.repository.ModelPurchaseRepository;
 import com.example.crafteria_server.domain.model.repository.ModelRepository;
@@ -76,19 +77,33 @@ public class ModelService {
     }
 
     public UserModelDto.ModelResponse uploadModel(Long userId, UserModelDto.ModelUploadRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+        User user = userRepository.findById(userId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
 
-        Author author = authorRepository.findById(user.getId())
-                .orElseGet(() -> Author.builder()
-                        .user(user)
-                        .id(user.getId())
-                        .realname(user.getRealname())
-                        .rating(5)
-                        .modelCount(0)
-                        .viewCount(0)
-                        .build());
+        Author author = authorRepository.findById(user.getId()).orElseGet(() -> Author.builder()
+                .user(user)
+                .id(user.getId())
+                .realname(user.getRealname())
+                .rating(5)
+                .modelCount(0)
+                .viewCount(0)
+                .build());
+        if (author.getRealname() == null) author.setRealname(user.getRealname());
         authorRepository.save(author);
+
+        // ✅ 업로드에서 STL은 필수
+        MultipartFile[] stlArr = request.getModelFiles();
+        if (stlArr == null || stlArr.length == 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "STL 파일은 1개 이상 필수입니다.");
+        }
+        if (stlArr.length > 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "STL은 최대 100개까지 업로드 가능합니다.");
+        }
+
+        MultipartFile[] descArr = Optional.ofNullable(request.getDescriptionImages()).orElse(new MultipartFile[0]);
+        if (descArr.length > 10) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "설명 이미지는 최대 10개까지 업로드 가능합니다.");
+        }
 
         Model newModel = Model.builder()
                 .author(author)
@@ -104,29 +119,51 @@ public class ModelService {
                 .category(request.getCategory())
                 .isDownloadable(request.isDownloadable())
                 .assets(new ArrayList<>())
+                .descriptionImages(new ArrayList<>())
                 .build();
 
-        // ✅ STL 여러 개 저장
-        MultipartFile[] files = Optional.ofNullable(request.getModelFiles()).orElse(new MultipartFile[0]);
-        if (files.length == 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "STL 파일을 1개 이상 업로드하세요.");
-        if (newModel.getAssets() == null) newModel.setAssets(new ArrayList<>());
+        // 설명 이미지 저장
+        int dIdx = 0;
+        for (MultipartFile img : descArr) {
+            if (img == null || img.isEmpty()) continue;
+            File saved = fileService.saveImage(img);
+            ModelDescriptionImage di = ModelDescriptionImage.builder()
+                    .model(newModel)
+                    .file(saved)
+                    .sortOrder(dIdx++)
+                    .build();
+            newModel.getDescriptionImages().add(di);
+        }
 
-        int idx = 0;
-        for (MultipartFile stl : files) {
+        // STL 저장
+        int sIdx = 0;
+        for (MultipartFile stl : stlArr) {
             if (stl == null || stl.isEmpty()) continue;
-
-            requireStlOrThrow(stl);                 // ✅ 여기서 관대하게 검사
-            File saved = fileService.saveModel(stl); // 기존 saveModel 재사용
-
+            requireStlOrThrow(stl);
+            File saved = fileService.saveModel(stl);
             ModelAsset asset = ModelAsset.builder()
                     .model(newModel)
                     .file(saved)
-                    .sortOrder(idx++)
+                    .sortOrder(sIdx++)
                     .build();
             newModel.getAssets().add(asset);
         }
 
+        // 대표 STL 지정(없으면 첫 번째)
+        if (newModel.getPrimaryAsset() == null && !newModel.getAssets().isEmpty()) {
+            newModel.setPrimaryAsset(newModel.getAssets().get(0));
+        }
+
         modelRepository.save(newModel);
+
+        // 통계
+        user.setTotalUploadCount(user.getTotalUploadCount() + 1);
+        userService.updateUserLevel(user);
+        userRepository.save(user);
+
+        log.info("[도면 업로드] userId={}, name='{}', price={}, downloadable={}, stlCount={}, descImgCount={}",
+                userId, request.getName(), request.getPrice(), request.isDownloadable(),
+                newModel.getAssets().size(), newModel.getDescriptionImages().size());
 
         return UserModelDto.ModelResponse.from(newModel, false, newModel.isDownloadable());
     }
@@ -144,54 +181,6 @@ public class ModelService {
                 .collect(Collectors.toList());
     }
 
-    /*public UserModelDto.ModelResponse purchaseModel(Long userId, Long modelId) {
-        User user = userRepository.findById(userId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
-        Model model = modelRepository.findById(modelId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "모델을 찾을 수 없습니다."));
-
-        if (model.getAuthor().getUser().getId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "자신이 판매중인 도면은 구매할 수 없습니다.");
-        }
-
-        modelPurchaseRepository.findByUserIdAndModelIdAndVerifiedTrue(userId, modelId).ifPresent(p -> {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "이미 구매한 모델입니다.");
-        });
-
-        ModelPurchase purchase = ModelPurchase.builder()
-                .user(user)
-                .model(model)
-                .paymentId(model.getPrice() > 0 ? UUID.randomUUID().toString() : null)
-                .verified(model.getPrice() == 0)
-                .build();
-
-        ModelPurchase savedPurchase = modelPurchaseRepository.save(purchase);
-
-        model.setDownloadCount(model.getDownloadCount() + 1);
-        modelRepository.save(model);
-
-
-
-        // 구매자 유저 레벨 업데이트
-        user.setTotalPurchaseCount(user.getTotalPurchaseCount() + 1);
-        user.setTotalPurchaseAmount(user.getTotalPurchaseAmount() + model.getPrice());
-        userService.updateUserLevel(user);
-        userRepository.save(user);
-
-        // 판매자 레벨 업데이트
-        User seller = model.getAuthor().getUser();
-        seller.setTotalSalesCount(seller.getTotalSalesCount() + 1);
-        seller.setTotalSalesAmount(seller.getTotalSalesAmount() + model.getPrice());
-        userService.updateUserLevel(seller);
-        userRepository.save(seller);
-
-
-
-        log.info("[도면 구매 처리] 구매자: {}, 판매자: {}, 도면ID: {}, 가격: {}, 다운로드 가능: {}",
-                user.getUsername(), seller.getUsername(), modelId, model.getPrice(), model.isDownloadable());
-
-        return UserModelDto.ModelResponse.from(savedPurchase, model.isDownloadable());
-    }*/
 
     public List<UserModelDto.ModelResponse> getMyUploadedModelList(int page, Long userId) {
         Pageable pageable = PageRequest.of(page, 10);
@@ -207,15 +196,14 @@ public class ModelService {
     }
 
     public UserModelDto.ModelResponse updateModel(Long modelId, Long userId, UserModelDto.ModelUploadRequest request) {
-        Model model = modelRepository.findById(modelId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
+        Model model = modelRepository.findById(modelId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
 
         if (!model.getAuthor().getId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "수정 권한이 없습니다.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "이 도면을 수정할 권한이 없습니다.");
         }
 
-
-
+        // 메타 업데이트
         model.setName(request.getName());
         model.setDescription(request.getDescription());
         model.setPrice(request.getPrice());
@@ -225,26 +213,68 @@ public class ModelService {
         model.setCategory(request.getCategory());
         model.setDownloadable(request.isDownloadable());
 
-        MultipartFile[] files = Optional.ofNullable(request.getModelFiles())
-                .orElse(new MultipartFile[0]);
+        // 설명 이미지: null이면 유지 / 값 오면 교체(빈배열=전체 제거)
+        MultipartFile[] descArr = request.getDescriptionImages(); // null 허용
+        if (descArr != null) {
+            // 기존 설명 이미지 엔티티/파일 정리 (파일 삭제는 정책에 맞게)
+            if (model.getDescriptionImages() == null) model.setDescriptionImages(new ArrayList<>());
+            for (ModelDescriptionImage di : model.getDescriptionImages()) {
+                // 필요 시 GCS 삭제:
+                // fileService.deleteFile(di.getFile());
+            }
+            model.getDescriptionImages().clear();
 
-        // ✅ 기존 STL 파일들 교체
-        if (model.getAssets() == null) model.setAssets(new ArrayList<>());
-        model.getAssets().clear();
+            if (descArr.length > 10) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "설명 이미지는 최대 10개까지 업로드 가능합니다.");
+            }
+            int dIdx = 0;
+            for (MultipartFile img : descArr) {
+                if (img == null || img.isEmpty()) continue;
+                File saved = fileService.saveImage(img);
+                ModelDescriptionImage nd = ModelDescriptionImage.builder()
+                        .model(model)
+                        .file(saved)
+                        .sortOrder(dIdx++)
+                        .build();
+                model.getDescriptionImages().add(nd);
+            }
+        }
 
-        int idx = 0;
-        for (MultipartFile stl : files) {
-            if (stl == null || stl.isEmpty()) continue;
+        // STL: null이면 유지 / 값 오면 교체(빈배열인 경우 → 교체 요청으로 간주할지 무시할지 정책 선택)
+        MultipartFile[] stlArr = request.getModelFiles(); // 수정에서는 null 허용(유지)
+        if (stlArr != null) {
+            if (stlArr.length > 100) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "STL은 최대 100개까지 업로드 가능합니다.");
+            }
 
-            requireStlOrThrow(stl);                  // ✅ 동일한 검증 로직
-            File saved = fileService.saveModel(stl);
+            // 기존 STL 자산 정리 (파일 삭제는 정책에 맞게)
+            if (model.getAssets() == null) model.setAssets(new ArrayList<>());
+            for (ModelAsset asset : model.getAssets()) {
+                // 필요 시 GCS 삭제:
+                // fileService.deleteFile(asset.getFile());
+            }
+            model.getAssets().clear();
 
-            ModelAsset asset = ModelAsset.builder()
-                    .model(model)
-                    .file(saved)
-                    .sortOrder(idx++)
-                    .build();
-            model.getAssets().add(asset);
+            int sIdx = 0;
+            for (MultipartFile stl : stlArr) {
+                if (stl == null || stl.isEmpty()) continue;
+                requireStlOrThrow(stl);
+                File saved = fileService.saveModel(stl);
+                ModelAsset na = ModelAsset.builder()
+                        .model(model)
+                        .file(saved)
+                        .sortOrder(sIdx++)
+                        .build();
+                model.getAssets().add(na);
+            }
+            // 대표 STL 재지정
+            if (!model.getAssets().isEmpty()) {
+                model.setPrimaryAsset(model.getAssets().get(0));
+            } else {
+                // 비어있게 두고 싶지 않다면 에러로 처리할 수도 있음.
+                // 여기서는 "교체를 요청했는데 0개 파일"이면 기존을 지운 셈이니, 정책에 맞게 막을 수도 있음.
+                model.setPrimaryAsset(null);
+            }
         }
 
         modelRepository.save(model);
@@ -430,6 +460,13 @@ public class ModelService {
         if (!looksLikeStl(file)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "STL(.stl) 파일만 업로드할 수 있습니다.");
         }
+    }
+    private java.util.List<File> saveImages(java.util.List<org.springframework.web.multipart.MultipartFile> files) {
+        if (files == null || files.isEmpty()) return java.util.List.of();
+        return files.stream()
+                .filter(f -> f != null && !f.isEmpty())
+                .map(fileService::saveImage) // 기존 FileService.saveImage 사용
+                .toList();
     }
 
 }
