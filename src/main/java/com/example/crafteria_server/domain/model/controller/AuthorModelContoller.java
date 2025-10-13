@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -29,6 +30,26 @@ public class AuthorModelContoller {
     private final ModelService modelService;
     private final ModelRepository modelRepository;
     private final FileService fileService;
+
+    @InitBinder
+    public void initBinder(WebDataBinder binder) {
+        // MultipartFile[]
+        binder.registerCustomEditor(org.springframework.web.multipart.MultipartFile[].class,
+                new java.beans.PropertyEditorSupport() {
+                    @Override public void setAsText(String text) { setValue(null); }
+                });
+        // MultipartFile (혹시 단일 필드가 추가될 확장 대비)
+        binder.registerCustomEditor(org.springframework.web.multipart.MultipartFile.class,
+                new java.beans.PropertyEditorSupport() {
+                    @Override public void setAsText(String text) { setValue(null); }
+                });
+        // Spring 6+/Boot 3+ 에서 지원되는 경우 빈 멀티파트 바인딩 off
+        try {
+            var m = WebDataBinder.class.getMethod("setBindEmptyMultipartFiles", boolean.class);
+            m.invoke(binder, false);
+        } catch (Exception ignore) {}
+    }
+
     // 내가 올린 도면 조회
     @GetMapping("/list/my")
     @Operation(summary = "내가 올린 도면 조회", description = "내가 올린 도면을 조회합니다.")
@@ -40,23 +61,32 @@ public class AuthorModelContoller {
     }
 
     @PostMapping(value = "/upload", consumes = "multipart/form-data", produces = "application/json")
-    @Operation(summary = "도면 업로드", description = "도면을 업로드합니다.")
-    public JsonBody<UserModelDto.ModelResponse> uploadModel(@AuthenticationPrincipal PrincipalDetails principalDetails, @ModelAttribute UserModelDto.ModelUploadRequest request) {
+    @Operation(summary = "도면 업로드", description = "STL 여러 개 + 설명용 이미지(여러 개, 옵션) 업로드")
+    public JsonBody<UserModelDto.ModelResponse> uploadModel(
+            @AuthenticationPrincipal PrincipalDetails principalDetails,
+            @ModelAttribute UserModelDto.ModelUploadRequest request) {
+
         if (principalDetails == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
         return JsonBody.of(200, "성공", modelService.uploadModel(principalDetails.getUserId(), request));
     }
 
+
     // 도면 수정
     @PutMapping(value = "/update/{modelId}", consumes = "multipart/form-data", produces = "application/json")
-    @Operation(summary = "도면 수정", description = "도면을 수정합니다.")
-    public JsonBody<UserModelDto.ModelResponse> updateModel(@PathVariable Long modelId, @AuthenticationPrincipal PrincipalDetails principalDetails, @ModelAttribute UserModelDto.ModelUploadRequest request) {
+    @Operation(summary = "도면 수정", description = "STL/설명이미지 교체 로직 포함")
+    public JsonBody<UserModelDto.ModelResponse> updateModel(
+            @PathVariable Long modelId,
+            @AuthenticationPrincipal PrincipalDetails principalDetails,
+            @ModelAttribute UserModelDto.ModelUploadRequest request) {
+
         if (principalDetails == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
 
-        return JsonBody.of(200, "성공", modelService.updateModel(modelId, principalDetails.getUserId(), request));
+        return JsonBody.of(200, "성공",
+                modelService.updateModel(modelId, principalDetails.getUserId(), request));
     }
 
     // 도면 삭제

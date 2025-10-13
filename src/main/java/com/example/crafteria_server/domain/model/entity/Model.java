@@ -28,6 +28,11 @@ public class Model extends BaseEntity {
     @Column()
     private String description;
 
+    @OneToMany(mappedBy = "model", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sortOrder ASC")
+    @Builder.Default
+    private java.util.List<ModelDescriptionImage> descriptionImages = new java.util.ArrayList<>();
+
     // rating: 0 ~ 10
     @Column(nullable = false)
     @Builder.Default
@@ -76,4 +81,9 @@ public class Model extends BaseEntity {
     @OrderBy("sortOrder ASC")
     @Builder.Default
     private List<ModelAsset> assets = new ArrayList<>();
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "primary_asset_id")
+    private ModelAsset primaryAsset;
+
 }

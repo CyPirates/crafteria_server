@@ -82,8 +82,32 @@ public class UserModelDto {
         @Schema(description = "STL 파일 URL 리스트")
         private List<String> modelFileUrls;
 
+        @Schema(description = "설명용 이미지 URL 리스트")
+        private java.util.List<String> descriptionImageUrls;
+
+        @Schema(description = "썸네일 URL (설명 이미지가 있으면 그 중 첫 번째, 없으면 대표/첫 STL)")
+        private String thumbnailUrl;
+
 
         public static ModelResponse from(Model model, boolean purchaseAvailability, boolean downloadable) {
+
+            java.util.List<String> stlUrls = (model.getAssets() != null && !model.getAssets().isEmpty())
+                    ? model.getAssets().stream().map(a -> a.getFile().getUrl()).toList()
+                    : java.util.List.of();
+
+            java.util.List<String> descUrls = (model.getDescriptionImages() != null && !model.getDescriptionImages().isEmpty())
+                    ? model.getDescriptionImages().stream().map(di -> di.getFile().getUrl()).toList()
+                    : java.util.List.of();
+
+            String thumb = null;
+            if (!descUrls.isEmpty()) {
+                thumb = descUrls.get(0); // 설명 이미지 최우선
+            } else if (model.getPrimaryAsset() != null) {
+                thumb = model.getPrimaryAsset().getFile().getUrl();
+            } else if (!stlUrls.isEmpty()) {
+                thumb = stlUrls.get(0);
+            }
+
             List<String> urls = model.getAssets().stream()
                     .map(asset -> asset.getFile().getUrl())
                     .toList();
@@ -104,10 +128,13 @@ public class UserModelDto {
                     .category(model.getCategory())
                     .downloadable(downloadable)
                     .modelFileUrls(urls)
+                    .descriptionImageUrls(descUrls)
+                    .thumbnailUrl(thumb)
                     .build();
         }
 
         public static ModelResponse from(ModelPurchase modelPurchase, boolean purchaseAvailability) {
+
             Model model = modelPurchase.getModel();
             List<String> urls = model.getAssets().stream()
                     .map(asset -> asset.getFile().getUrl())
@@ -171,6 +198,13 @@ public class UserModelDto {
 
         @Schema(description = "도면 다운로드 가능 여부", example = "true")
         private boolean downloadable;
+
+        @io.swagger.v3.oas.annotations.media.ArraySchema(
+                schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", format = "binary"),
+                minItems = 0, maxItems = 10
+        )
+        @Schema(description = "설명용 이미지 파일들 (최대 10개)")
+        private org.springframework.web.multipart.MultipartFile[] descriptionImages;
 
         @io.swagger.v3.oas.annotations.media.ArraySchema(
                 schema = @io.swagger.v3.oas.annotations.media.Schema(type = "string", format = "binary"),
