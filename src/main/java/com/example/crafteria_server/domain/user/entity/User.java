@@ -1,6 +1,7 @@
 package com.example.crafteria_server.domain.user.entity;
 
 import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
+import com.example.crafteria_server.global.conveter.CryptoStringConverter;
 import com.example.crafteria_server.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -109,5 +110,8 @@ public class User extends BaseEntity {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserAddress> addresses = new ArrayList<>();
 
+    @Column(name = "bank_account", length = 512) // 암호문(Base64) 여유 길이
+    @jakarta.persistence.Convert(converter = CryptoStringConverter.class)
+    private String bankAccount;
 
 }
