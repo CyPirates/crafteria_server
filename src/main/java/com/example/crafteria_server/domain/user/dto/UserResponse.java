@@ -78,6 +78,9 @@ public class UserResponse {
     @Schema(description = "본인인증 완료 시각", example = "2023-09-01T15:30:00")
     private LocalDateTime identityVerifiedAt;
 
+    @Schema(description = "계좌번호(복호화 값)", example = "110-123-456789")
+    private String bankAccount;
+
     public static UserResponse from(User user, List<UserAddressDto.UserAddressResponse> addresses , List<ModelSaleTransaction> salesTransactions) {
         return UserResponse.builder()
                 .id(user.getId())
@@ -101,6 +104,7 @@ public class UserResponse {
                 .salesTransactions(salesTransactions)
                 .identityVerified(user.isIdentityVerified())
                 .identityVerifiedAt(user.getIdentityVerifiedAt())
+                .bankAccount(user.getBankAccount())
                 .build();
     }
 }

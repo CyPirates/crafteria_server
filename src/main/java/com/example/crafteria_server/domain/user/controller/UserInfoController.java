@@ -65,6 +65,7 @@ public class UserInfoController {
         return JsonBody.of(200, "성공", response);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{userId}")
     @Operation(summary = "특정 사용자 조회", description = "특정 사용자의 정보를 조회합니다.")
     public JsonBody<UserResponse> getUserById(@PathVariable Long userId) {
@@ -178,5 +179,38 @@ public class UserInfoController {
     ) {
         List<PopularAuthorDto> data = userService.getPopularAuthorsBySales(page);
         return JsonBody.of(200, "성공", data);
+    }
+
+
+    @PatchMapping("/me/bank-account")
+    @Operation(summary = "내 계좌 등록/수정", description = "계좌번호를 등록하거나 수정합니다. DB에는 암호화 저장, 응답은 복호화 값으로 반환합니다.")
+    public JsonBody<UserResponse> upsertMyBankAccount(
+            @AuthenticationPrincipal PrincipalDetails principalDetails,
+            @RequestBody @Valid UserBankAccountDto request) {
+
+        if (principalDetails == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        userInfoService.upsertBankAccount(principalDetails.getUserId(), request);
+
+        User updated = userInfoService.getCurrentUser(principalDetails.getUserId());
+        UserResponse resp = userInfoService.toUserResponse(updated);
+        return JsonBody.of(200, "계좌가 저장되었습니다.", resp);
+    }
+
+    @DeleteMapping("/me/bank-account")
+    @Operation(summary = "내 계좌 삭제", description = "등록된 계좌번호를 삭제합니다.")
+    public JsonBody<UserResponse> deleteMyBankAccount(
+            @AuthenticationPrincipal PrincipalDetails principalDetails) {
+
+        if (principalDetails == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        userInfoService.deleteBankAccount(principalDetails.getUserId());
+        User updated = userInfoService.getCurrentUser(principalDetails.getUserId());
+        UserResponse resp = userInfoService.toUserResponse(updated);
+        return JsonBody.of(200, "계좌가 삭제되었습니다.", resp);
     }
 }
