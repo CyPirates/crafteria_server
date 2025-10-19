@@ -1,6 +1,10 @@
 package com.example.crafteria_server.domain.order.service;
 
 
+import com.example.crafteria_server.domain.coupon.entity.Coupon;
+import com.example.crafteria_server.domain.coupon.entity.CouponType;
+import com.example.crafteria_server.domain.coupon.repository.CouponRepository;
+import com.example.crafteria_server.domain.coupon.service.CouponService;
 import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.domain.file.service.FileService;
 import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
@@ -12,6 +16,8 @@ import com.example.crafteria_server.domain.order.entity.Order;
 import com.example.crafteria_server.domain.order.entity.OrderItem;
 import com.example.crafteria_server.domain.order.entity.OrderStatus;
 import com.example.crafteria_server.domain.order.repository.OrderRepository;
+import com.example.crafteria_server.domain.review.entity.Review;
+import com.example.crafteria_server.domain.review.repository.ReviewRepository;
 import com.example.crafteria_server.domain.technology.entity.Technology;
 import com.example.crafteria_server.domain.technology.repository.TechnologyRepository;
 import com.example.crafteria_server.domain.user.entity.User;
@@ -28,10 +34,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,29 +50,62 @@ public class OrderService {
     private final ManufacturerRepository manufacturerRepository;  // 추가
     private final TechnologyRepository technologyRepository;  // 추가
     private final UserService userService;
+    private final CouponService couponService;
+    private final CouponRepository couponRepository;
+    private final ReviewRepository reviewRepository;
 
     public List<OrderDto.OrderResponse> getMyOrderList(Long userId, int page) {
         PageRequest pageable = PageRequest.of(page, 10);
         List<Order> orders = orderRepository.findAllByUserIdExcludingOrdered(userId, pageable);
+
+        List<Long> orderIds = orders.stream().map(Order::getId).toList();
+        Map<Long, Review> reviewMap = reviewRepository.findByUser_IdAndOrder_IdIn(userId, orderIds)
+                .stream().collect(Collectors.toMap(r -> r.getOrder().getId(), r -> r));
+
         return orders.stream()
-                .map(OrderDto.OrderResponse::from)
+                .map(order -> {
+                    Review review = reviewMap.get(order.getId());
+                    return OrderDto.OrderResponse.from(order,
+                            review != null,
+                            review != null ? review.getId() : null);
+                })
                 .collect(Collectors.toList());
     }
 
     public OrderDto.OrderResponse getOrderDetail(Long userId, Long orderId) {
-        Order order = orderRepository.findByUserIdAndId(userId, orderId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
+        Order order = orderRepository.findByUserIdAndId(userId, orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
 
-        return OrderDto.OrderResponse.from(order);
+        Review review = reviewRepository.findByUser_IdAndOrder_Id(userId, orderId).orElse(null);
+
+        return OrderDto.OrderResponse.from(order,
+                review != null,
+                review != null ? review.getId() : null);
     }
 
     public OrderDto.OrderResponse createOrder(Long userId, OrderDto.OrderRequest request, List<MultipartFile> files) {
-        User user = userRepository.findById(userId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
-        Manufacturer manufacturer = manufacturerRepository.findById(request.getManufacturerId()).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "제조사를 찾을 수 없습니다."));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다."));
+        Manufacturer manufacturer = manufacturerRepository.findById(request.getManufacturerId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제조사를 찾을 수 없습니다."));
+
+        long originalPrice = request.getPurchasePrice();
+        long discount = 0;
+        Coupon appliedCoupon = null;
+
+        if (request.getCouponId() != null) {
+            appliedCoupon = couponService.validateOrderCoupon(request.getCouponId(), userId);
+            discount = (originalPrice * appliedCoupon.getDiscountRate()) / 100;
+            discount = Math.min(discount, appliedCoupon.getMaxDiscountAmount());
+        }
+
+        long discountedPrice = originalPrice - discount;
+        long vat = (long) Math.ceil(discountedPrice * 0.1);
+        long deliveryFee = 3000;
+        long finalPrice = discountedPrice + vat + deliveryFee;
 
         String paymentId = UUID.randomUUID().toString();
+
         Order order = Order.builder()
                 .user(user)
                 .manufacturer(manufacturer)
@@ -78,16 +114,19 @@ public class OrderService {
                 .recipientPhone(request.getRecipientPhone())
                 .recipientEmail(request.getRecipientEmail())
                 .specialRequest(request.getSpecialRequest())
-                .purchasePrice(request.getPurchasePrice())
+                .purchasePrice(finalPrice)
                 .status(OrderStatus.ORDERED)
-                .paymentId(paymentId)
+                .paymentId(finalPrice > 0 ? paymentId : null)
+                .coupon(appliedCoupon) // ✅ 쿠폰 저장만! 사용 처리 X
                 .build();
 
         List<OrderItem> orderItems = new ArrayList<>();
         for (int i = 0; i < request.getOrderItems().size(); i++) {
             OrderDto.OrderItemDto itemDto = request.getOrderItems().get(i);
             MultipartFile file = files.get(i);
+
             File savedFile = fileService.saveModel(file);
+
             Technology technology = technologyRepository.findById(itemDto.getTechnologyId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "기술 정보를 찾을 수 없습니다."));
 
@@ -101,32 +140,20 @@ public class OrderService {
                     .magnification(itemDto.getMagnification())
                     .quantity(itemDto.getQuantity())
                     .build();
+
             orderItems.add(orderItem);
         }
 
         order.setOrderItems(orderItems);
         orderRepository.save(order);
 
-        // 구매자 유저 레벨 업데이트
-        user.setTotalPurchaseCount(user.getTotalPurchaseCount() + 1);
-        user.setTotalPurchaseAmount(user.getTotalPurchaseAmount() + order.getPurchasePrice());
-        userService.updateUserLevel(user);
-        userRepository.save(user);
+        if (finalPrice == 0 && appliedCoupon != null) {
+            couponService.markCouponAsUsed(appliedCoupon.getId(), userId);
+        }
 
-        // 판매자 레벨 업데이트
-        User seller = manufacturer.getDashboardUser();
-        seller.setTotalPrintedCount(seller.getTotalPrintedCount() + 1);
-        seller.setTotalPrintedAmount(seller.getTotalPrintedAmount() + order.getPurchasePrice());
-        userService.updateUserLevel(seller);
-        userRepository.save(seller);
-
-        log.info("[주문 생성] 사용자: {}, 수령인: {}, 주문금액: {}, 주문항목수: {}, 제조사: {}, 결제ID: {}",
-                user.getUsername(),
-                order.getRecipientName(),
-                order.getPurchasePrice(),
-                orderItems.size(),
-                manufacturer.getName(),
-                paymentId);
+        log.info("[주문 생성] 사용자: {}, 주문금액(할인+VAT+배송): {}, 제조사: {}, 항목 수: {}, 결제 ID: {}, 쿠폰 ID: {}",
+                user.getUsername(), finalPrice, manufacturer.getName(), orderItems.size(), paymentId,
+                appliedCoupon != null ? appliedCoupon.getId() : "없음");
 
         return OrderDto.OrderResponse.from(order);
     }
@@ -136,7 +163,7 @@ public class OrderService {
         Order order = orderRepository.findByUserIdAndId(userId, orderId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
 
-        if (!order.getStatus().equals(OrderStatus.ORDERED)) {
+        if (!(order.getStatus().equals(OrderStatus.ORDERED) || order.getStatus().equals(OrderStatus.PAID))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "취소할 수 없는 상태입니다.");
         }
 

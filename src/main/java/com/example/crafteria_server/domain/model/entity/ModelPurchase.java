@@ -1,5 +1,6 @@
 package com.example.crafteria_server.domain.model.entity;
 
+import com.example.crafteria_server.domain.coupon.entity.Coupon;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.global.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -28,4 +29,8 @@ public class ModelPurchase extends BaseEntity {
     @Column(nullable = false)
     @Builder.Default
     private boolean verified = false;  // 결제 완료 여부
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coupon_id")
+    private Coupon coupon;
 }

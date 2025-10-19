@@ -4,7 +4,6 @@ spring:
     url: ${DATASOURCE_URL}
     username: ${DATASOURCE_USERNAME}
     password: ${DATASOURCE_PASSWORD}
-
   jpa:
     open-in-view: false
     hibernate:
@@ -85,6 +84,24 @@ spring:
   portone:
     api:
       secret: ${PORTONE_API_SECRET}
+      store-id: ${PORTONE_STORE_ID}
+      channel-key: ${PORTONE_CHANNEL_KEY}
+
+tracker:
+    delivery:
+      client-id: ${TRACKER_CLIENT_ID}
+      client-secret: ${TRACKER_CLIENT_SECRET}
+      webhook-callback-url: ${TRACKER_WEBHOOK_CALLBACK_URL}
+      webhook-ttl-hours: ${TRACKER_WEBHOOK_TTL_HOURS}
+
+app:
+  crypto:
+    key-b64: ${APP_CRYPTO_KEY_B64}
 
 server:
   port: ${SERVER_PORT}
+
+springdoc:
+  use-fqn: true
+
+

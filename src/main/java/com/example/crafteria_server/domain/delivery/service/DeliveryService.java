@@ -3,14 +3,17 @@ package com.example.crafteria_server.domain.delivery.service;
 import com.example.crafteria_server.domain.delivery.dto.DeliveryDto;
 import com.example.crafteria_server.domain.delivery.entity.Delivery;
 import com.example.crafteria_server.domain.delivery.repository.DeliveryRepository;
+import com.example.crafteria_server.domain.deliverytracking.service.TrackingWebhookRegistrar;
 import com.example.crafteria_server.domain.order.entity.Order;
 import com.example.crafteria_server.domain.order.entity.OrderStatus;
 import com.example.crafteria_server.domain.order.repository.OrderRepository;
 import com.example.crafteria_server.domain.user.entity.User;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
@@ -22,18 +25,28 @@ import java.util.stream.Collectors;
 public class DeliveryService {
     private final DeliveryRepository deliveryRepository;
     private final OrderRepository orderRepository;
+    private final TrackingWebhookRegistrar webhookRegistrar;
 
-    private void checkOrderStatusForDelivery(Long orderId) throws AccessDeniedException {
+    private void validateOrderStatusForCreate(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Order not found"));
 
         if (!order.getStatus().equals(OrderStatus.PRODUCTED)) {
-            throw new AccessDeniedException("Delivery functionality is available only when order status is 'PRODUCTED'.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "배송 등록은 주문 상태가 'PRODUCTED'일 때만 가능합니다.");
+        }
+    }
+
+    private void validateOrderStatusForUpdateOrDelete(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Order not found"));
+
+        if (!(order.getStatus().equals(OrderStatus.PRODUCTED) || order.getStatus().equals(OrderStatus.DELIVERING))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "배송 수정/삭제는 'PRODUCTED' 또는 'DELIVERING' 상태에서만 가능합니다.");
         }
     }
 
     public DeliveryDto.DeliveryResponse createDelivery(DeliveryDto.DeliveryRequest request, User user) throws AccessDeniedException {
-        checkOrderStatusForDelivery(request.getOrderId());
+        validateOrderStatusForCreate(request.getOrderId());
 
         Order order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new EntityNotFoundException("Order not found"));
@@ -52,6 +65,12 @@ public class DeliveryService {
                 .build();
 
         delivery = deliveryRepository.save(delivery);
+
+        if (delivery.getCourier() != null && delivery.getTrackingNumber() != null) {
+            webhookRegistrar.registerTrackWebhook(delivery.getCourier(), delivery.getTrackingNumber());
+        }
+
+
         return DeliveryDto.DeliveryResponse.from(delivery);
     }
 
@@ -59,7 +78,7 @@ public class DeliveryService {
         Delivery delivery = deliveryRepository.findById(deliveryId)
                 .orElseThrow(() -> new EntityNotFoundException("Delivery not found"));
 
-        checkOrderStatusForDelivery(delivery.getOrder().getId());
+        validateOrderStatusForUpdateOrDelete(delivery.getOrder().getId());
 
         if (!delivery.getOrder().getManufacturer().getId().equals(user.getManufacturer().getId())) {
             throw new AccessDeniedException("You do not have permission to modify this delivery.");
@@ -76,7 +95,7 @@ public class DeliveryService {
         Delivery delivery = deliveryRepository.findById(deliveryId)
                 .orElseThrow(() -> new EntityNotFoundException("Delivery not found"));
 
-        checkOrderStatusForDelivery(delivery.getOrder().getId());
+        validateOrderStatusForUpdateOrDelete(delivery.getOrder().getId());
 
         if (!delivery.getOrder().getManufacturer().getId().equals(user.getManufacturer().getId())) {
             throw new AccessDeniedException("You do not have permission to delete this delivery.");
@@ -106,4 +125,22 @@ public class DeliveryService {
                 .map(DeliveryDto.DeliveryResponse::from)
                 .collect(Collectors.toList());
     }
+
+    public List<DeliveryDto.DeliveryResponse> getAllDeliveries() {
+        List<Delivery> deliveries = deliveryRepository.findAll();
+        return deliveries.stream()
+                .map(DeliveryDto.DeliveryResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    public List<DeliveryDto.DeliveryResponse> getDeliveriesForUserOrders(User user) {
+        List<Delivery> deliveries = deliveryRepository.findAllByOrder_User_Id(user.getId());
+        return deliveries.stream()
+                .map(DeliveryDto.DeliveryResponse::from)
+                .collect(Collectors.toList());
+    }
+
+
+
+
 }

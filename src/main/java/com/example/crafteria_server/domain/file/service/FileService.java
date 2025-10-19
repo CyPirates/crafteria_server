@@ -24,7 +24,10 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -78,16 +81,23 @@ public class FileService {
     public File saveImage(MultipartFile multipartFile) {
         String originalFilename = multipartFile.getOriginalFilename();
         String extension = "image/webp";
-        String uuid = UUID.randomUUID().toString();
+        String uuid = java.util.UUID.randomUUID().toString();
         String filePath = IMAGE_DIR + "/" + uuid;
+
+        String asciiName = originalFilename == null ? "image.webp" : originalFilename.replace("\"", "");
+        String utf8Encoded = URLEncoder.encode(asciiName, StandardCharsets.UTF_8);
+        String contentDisposition = "inline; filename=\"" + asciiName + "\"; filename*=UTF-8''" + utf8Encoded;
+        // 이미지의 경우 보통 미리보기 원하면 inline, 무조건 다운로드는 attachment로 바꿔도 됨
 
         BlobInfo blobInfo = BlobInfo.newBuilder(envBean.getBucketName(), filePath)
                 .setContentType(extension)
+                .setContentDisposition(contentDisposition) // ✅ 여기!
                 .build();
 
         try {
             Blob blob = storage.create(blobInfo, convertToWebP(multipartFile));
-            String imageUrl = String.format("https://storage.googleapis.com/%s/%s", envBean.getBucketName(), filePath);
+            String imageUrl = String.format("https://storage.googleapis.com/%s/%s",
+                    envBean.getBucketName(), filePath);
             String fileName = blob.getName();
 
             File file = File.builder()
@@ -109,16 +119,23 @@ public class FileService {
     public File saveModel(MultipartFile multipartFile) {
         String originalFilename = multipartFile.getOriginalFilename();
         String extension = "model/stl";
-        String uuid = UUID.randomUUID().toString();
+        String uuid = java.util.UUID.randomUUID().toString();
         String filePath = MODEL_DIR + "/" + uuid;
+
+        // RFC 5987 형식: filename(ASCII) + filename* (UTF-8)
+        String asciiName = originalFilename == null ? "file.stl" : originalFilename.replace("\"", "");
+        String utf8Encoded = URLEncoder.encode(asciiName, StandardCharsets.UTF_8);
+        String contentDisposition = "attachment; filename=\"" + asciiName + "\"; filename*=UTF-8''" + utf8Encoded;
 
         BlobInfo blobInfo = BlobInfo.newBuilder(envBean.getBucketName(), filePath)
                 .setContentType(extension)
+                .setContentDisposition(contentDisposition) // ✅ 여기!
                 .build();
 
         try {
             Blob blob = storage.create(blobInfo, multipartFile.getBytes());
-            String modelUrl = String.format("https://storage.googleapis.com/%s/%s", envBean.getBucketName(), filePath);
+            String modelUrl = String.format("https://storage.googleapis.com/%s/%s",
+                    envBean.getBucketName(), filePath);
             String fileName = blob.getName();
 
             File file = File.builder()
@@ -157,5 +174,82 @@ public class FileService {
 
     public void deleteFiles(List<File> files) {
         files.forEach(this::deleteFile);
+    }
+
+    /** RFC 5987 규격으로 Content-Disposition 값 생성 (한글/공백 안전) */
+    private String buildContentDisposition(com.example.crafteria_server.domain.file.entity.File fileEntity) {
+        String original = Optional.ofNullable(fileEntity.getOriginalName()).orElse("file");
+        // 따옴표 제거(헤더 안전)
+        String asciiName = original.replace("\"", "");
+        String encoded = URLEncoder.encode(asciiName, StandardCharsets.UTF_8);
+        // 이미지: inline(미리보기), 그 외: attachment(다운로드)
+        boolean isImage = fileEntity.getType() == com.example.crafteria_server.domain.file.entity.Type.IMAGE;
+        String dispType = isImage ? "inline" : "attachment";
+        return dispType + "; filename=\"" + asciiName + "\"; filename*=UTF-8''" + encoded;
+    }
+
+    /** 단일 파일(레코드) 메타데이터 백필 */
+    public boolean backfillContentDisposition(com.example.crafteria_server.domain.file.entity.File fileEntity) {
+        try {
+            String bucket = envBean.getBucketName();
+            String objectName = fileEntity.getFileName(); // ex) models/<uuid> or images/<uuid>
+            com.google.cloud.storage.Blob blob = storage.get(bucket, objectName);
+            if (blob == null) {
+                log.warn("[CD 백필] Blob not found: fileId={}, object={}", fileEntity.getId(), objectName);
+                return false;
+            }
+            String newCd = buildContentDisposition(fileEntity);
+
+            // contentType이 DB/객체에 없으면 안전하게 채움
+            String contentType = Optional.ofNullable(fileEntity.getExtension())
+                    .orElse(Optional.ofNullable(blob.getContentType()).orElse("application/octet-stream"));
+
+            com.google.cloud.storage.BlobInfo updated = blob.toBuilder()
+                    .setContentDisposition(newCd)
+                    .setContentType(contentType)
+                    .build();
+            storage.update(updated);
+
+            log.info("[CD 백필] OK fileId={}, object={}, contentDisposition={}", fileEntity.getId(), objectName, newCd);
+            return true;
+        } catch (Exception e) {
+            log.error("[CD 백필] FAIL fileId={}, msg={}", fileEntity.getId(), e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 전체 일괄 백필 (페이지네이션)
+     * @param pageSize 페이지당 처리 개수 (예: 500~2000 권장)
+     * @param dryRun true면 실행하지 않고 로그만 남김
+     * @return 실제 업데이트 성공 건수
+     */
+    @Transactional(readOnly = true)
+    public int backfillAllContentDisposition(int pageSize, boolean dryRun) {
+        int updated = 0;
+        long page = 0;
+        while (true) {
+            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of((int) page, pageSize);
+            org.springframework.data.domain.Page<com.example.crafteria_server.domain.file.entity.File> slice =
+                    fileRepository.findAll(pageable);
+            if (slice.isEmpty()) break;
+
+            for (com.example.crafteria_server.domain.file.entity.File f : slice.getContent()) {
+                // 이미 세팅되어 있으면 스킵하고 싶다면:
+                // Blob b = storage.get(envBean.getBucketName(), f.getFileName());
+                // if (b != null && b.getContentDisposition() != null) continue;
+
+                if (dryRun) {
+                    log.info("[CD 백필 DRY-RUN] fileId={}, name={}, type={}, url={}",
+                            f.getId(), f.getOriginalName(), f.getType(), f.getUrl());
+                } else {
+                    if (backfillContentDisposition(f)) updated++;
+                }
+            }
+            if (!slice.hasNext()) break;
+            page++;
+        }
+        log.info("[CD 백필 완료] dryRun={}, updatedCount={}", dryRun, updated);
+        return updated;
     }
 }

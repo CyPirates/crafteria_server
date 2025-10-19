@@ -1,11 +1,14 @@
 package com.example.crafteria_server.domain.order.entity;
 
+import com.example.crafteria_server.domain.coupon.entity.Coupon;
+import com.example.crafteria_server.domain.delivery.entity.Delivery;
 import com.example.crafteria_server.domain.file.entity.File;
 import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
 import com.example.crafteria_server.domain.model.entity.Model;
 import com.example.crafteria_server.domain.review.entity.Review;
 import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.global.entity.BaseEntity;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -67,6 +70,19 @@ public class Order extends BaseEntity {
 
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private Review review;
+
+    @Schema(description = "리뷰 작성 여부", example = "true")
+    private boolean reviewed;
+
+    @Schema(description = "리뷰 ID (작성된 경우만)", example = "123", nullable = true)
+    private Long reviewId;
+
+    @OneToOne(mappedBy = "order", fetch = FetchType.LAZY)
+    private Delivery delivery;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coupon_id")
+    private Coupon coupon;
 
 
 }

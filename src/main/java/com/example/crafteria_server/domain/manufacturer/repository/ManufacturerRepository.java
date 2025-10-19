@@ -1,6 +1,7 @@
 package com.example.crafteria_server.domain.manufacturer.repository;
 
 import com.example.crafteria_server.domain.manufacturer.entity.Manufacturer;
+import com.example.crafteria_server.domain.order.entity.Order;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -15,4 +16,5 @@ public interface ManufacturerRepository extends JpaRepository<Manufacturer, Long
 
 
     Optional<Manufacturer> findByDashboardUserId(Long dashboardUserId);
+
 }

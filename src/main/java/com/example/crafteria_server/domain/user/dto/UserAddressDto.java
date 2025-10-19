@@ -1,5 +1,6 @@
 package com.example.crafteria_server.domain.user.dto;
 
+import com.example.crafteria_server.domain.user.entity.UserAddress;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -23,6 +24,9 @@ public class UserAddressDto {
 
         @Schema(description = "기본 주소 여부", example = "true")
         private boolean isDefault;
+
+        @Schema(description = "우편번호(5자리)", example = "06236")
+        private String postalCode;
     }
 
     @Getter
@@ -46,5 +50,23 @@ public class UserAddressDto {
 
         @Schema(description = "기본 주소 여부", example = "true")
         private boolean isDefault;
+
+        @Schema(description = "우편번호(5자리)", example = "06236")
+        private String postalCode;
+
+        public static UserAddressResponse from(UserAddress address) {
+            return UserAddressResponse.builder()
+                    .id(address.getId())
+                    .label(address.getLabel())
+                    .baseAddress(address.getBaseAddress())
+                    .detailAddress(address.getDetailAddress())
+                    .isDefault(address.isDefault())
+                    .postalCode(address.getPostalCode())
+                    .build();
+        }
+
+
     }
+
+
 }

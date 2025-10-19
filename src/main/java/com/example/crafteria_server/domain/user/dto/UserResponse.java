@@ -2,9 +2,11 @@ package com.example.crafteria_server.domain.user.dto;
 
 import com.example.crafteria_server.domain.user.entity.Role;
 import com.example.crafteria_server.domain.user.entity.User;
+import com.example.crafteria_server.domain.user.repository.ModelSaleTransaction;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -27,6 +29,15 @@ public class UserResponse {
 
     @Schema(description = "유저 권한", example = "ROLE_USER")
     private Role role;
+
+    @Schema(description = "밴 상태", example = "false")
+    private boolean banned;
+
+    @Schema(description = "밴 해제 예정 시간", example = "2023-10-01T12:00:00")
+    private String banUntil;
+
+    @Schema(description = "전화 번호", example = "010-1234-5678")
+    private String phoneNumber;
 
     @Schema(description = "총 도면 구매 횟수", example = "3")
     private int totalPurchaseCount;
@@ -55,17 +66,49 @@ public class UserResponse {
     @Schema(description = "판매자 레벨(1~5)", example = "4")
     private int sellerLevel;
 
+    @Schema(description = "유저 주소 목록", example = "[]")
     private List<UserAddressDto.UserAddressResponse> addresses;
 
-    public static UserResponse from(User user, List<UserAddressDto.UserAddressResponse> addresses) {
+    @Schema(description = "판매 거래 내역", example = "[]")
+    private List<ModelSaleTransaction> salesTransactions;
+
+    @Schema(description = "본인인증 여부", example = "true")
+    private boolean identityVerified;
+
+    @Schema(description = "본인인증 완료 시각", example = "2023-09-01T15:30:00")
+    private LocalDateTime identityVerifiedAt;
+
+    @Schema(description = "계좌번호(복호화 값)", example = "110-123-456789")
+    private String bankAccount;
+
+    @Schema(description = "계좌 종류 (은행명 등)", example = "국민은행")
+    private String accountType;
+
+    public static UserResponse from(User user, List<UserAddressDto.UserAddressResponse> addresses , List<ModelSaleTransaction> salesTransactions) {
         return UserResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .realname(user.getRealname())
                 .role(user.getRole())
+                .oauth2Id(user.getOauth2Id())
+                .phoneNumber(user.getPhoneNumber())
+                .totalPurchaseCount(user.getTotalPurchaseCount())
+                .totalPurchaseAmount(user.getTotalPurchaseAmount())
+                .totalUploadCount(user.getTotalUploadCount())
+                .totalSalesCount(user.getTotalSalesCount())
+                .totalSalesAmount(user.getTotalSalesAmount())
+                .totalPrintedCount(user.getTotalPrintedCount())
+                .totalPrintedAmount(user.getTotalPrintedAmount())
                 .userLevel(user.getUserLevel())
                 .sellerLevel(user.getSellerLevel())
                 .addresses(addresses)
+                .banned(user.isBanned())
+                .banUntil(user.getBanUntil() != null ? user.getBanUntil().toString() : null)
+                .salesTransactions(salesTransactions)
+                .identityVerified(user.isIdentityVerified())
+                .identityVerifiedAt(user.getIdentityVerifiedAt())
+                .bankAccount(user.getBankAccount())
+                .accountType(user.getAccountType())
                 .build();
     }
 }

@@ -34,6 +34,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.jboss.logging:jboss-logging:3.4.1.Final'
 
+    implementation 'org.springframework.boot:spring-boot-starter-webflux' // WebClient
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
 
     // jwt
     implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
@@ -61,6 +64,9 @@ dependencies {
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.11.0'
+    testImplementation 'org.mockito:mockito-inline:5.2.0' // final/class mocking 편의
+    testImplementation 'io.projectreactor:reactor-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

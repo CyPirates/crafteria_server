@@ -29,4 +29,12 @@ public interface ModelRepository extends JpaRepository<Model, Long> {
     Page<Model> findAllByAuthorIdAndIsDeletedFalseOrderByCreateDateDesc(Long authorId, Pageable pageable);
 
     Optional<Model> findByIdAndIsDeletedFalse(Long modelId);
+
+    Page<Model> findAllByIsDeletedFalseOrderByDownloadCountDesc(Pageable pageable);
+
+    // ✅ 무료 도면 (price == 0)
+    Page<Model> findAllByIsDeletedFalseAndPriceEqualsOrderByCreateDateDesc(long price, Pageable pageable);
+
+    // ✅ 유료 도면 (price > 0)
+    Page<Model> findAllByIsDeletedFalseAndPriceGreaterThanOrderByCreateDateDesc(long price, Pageable pageable);
 }
