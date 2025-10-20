@@ -63,5 +63,18 @@ public class SalesStatisticsService {
                 ))
                 .collect(Collectors.toList());
     }
+
+    public List<WeeklySalesStatisticsDTO> getWeeklySalesStatistics(Long manufacturerId, LocalDate startDate, LocalDate endDate) {
+        List<WeeklySalesStatisticsProjection> projections = orderRepository.findWeeklySalesStatistics(manufacturerId, startDate, endDate);
+
+        return projections.stream()
+                .map(p -> WeeklySalesStatisticsDTO.builder()
+                        .year(p.getYear())
+                        .week(p.getWeek())
+                        .totalSalesAmount(p.getTotalSalesAmount() != null ? p.getTotalSalesAmount() : 0L)
+                        .totalOrders(p.getTotalOrders() != null ? p.getTotalOrders() : 0)
+                        .build())
+                .collect(Collectors.toList());
+    }
 }
 

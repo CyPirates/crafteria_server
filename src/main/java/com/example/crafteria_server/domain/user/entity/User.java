@@ -114,4 +114,7 @@ public class User extends BaseEntity {
     @jakarta.persistence.Convert(converter = CryptoStringConverter.class)
     private String bankAccount;
 
+    @Column(name = "account_type", length = 64)
+    private String accountType;
+
 }

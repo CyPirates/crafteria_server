@@ -78,10 +78,13 @@ public class UserInfoService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
 
+
         // 정규화(공백 제거 등) — 필요 시 강화
         String normalized = request.getAccountNumber()
                 .replaceAll("\\s+", "") // 공백 제거
                 .replaceAll("-", "-");   // 특수 하이픈 -> 일반 하이픈
+
+        user.setAccountType(request.getAccountType());
 
         user.setBankAccount(normalized); // ✅ 컨버터가 암호화해서 DB 저장
         userRepository.save(user);

@@ -2,6 +2,7 @@ package com.example.crafteria_server.domain.chart.controller;
 
 import com.example.crafteria_server.domain.chart.dto.MonthlySalesStatisticsDTO;
 import com.example.crafteria_server.domain.chart.dto.SalesStatisticsDTO;
+import com.example.crafteria_server.domain.chart.dto.WeeklySalesStatisticsDTO;
 import com.example.crafteria_server.domain.chart.service.SalesStatisticsService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +55,18 @@ public class SalesStatisticsController {
         List<MonthlySalesStatisticsDTO> statistics = salesStatisticsService.getMonthlySalesStatistics(manufacturerId, startDate, endDate);
         return ResponseEntity.ok(statistics);
     }
+
+    @GetMapping("/weekly")
+    @Operation(summary = "주간 매출 통계 조회")
+    public ResponseEntity<List<WeeklySalesStatisticsDTO>> getWeeklySalesStatistics(
+            @RequestParam Long manufacturerId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    ) {
+        List<WeeklySalesStatisticsDTO> statistics = salesStatisticsService.getWeeklySalesStatistics(manufacturerId, startDate, endDate);
+        return ResponseEntity.ok(statistics);
+    }
+
 }
 
 

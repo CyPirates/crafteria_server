@@ -81,6 +81,9 @@ public class UserResponse {
     @Schema(description = "계좌번호(복호화 값)", example = "110-123-456789")
     private String bankAccount;
 
+    @Schema(description = "계좌 종류 (은행명 등)", example = "국민은행")
+    private String accountType;
+
     public static UserResponse from(User user, List<UserAddressDto.UserAddressResponse> addresses , List<ModelSaleTransaction> salesTransactions) {
         return UserResponse.builder()
                 .id(user.getId())
@@ -105,6 +108,7 @@ public class UserResponse {
                 .identityVerified(user.isIdentityVerified())
                 .identityVerifiedAt(user.getIdentityVerifiedAt())
                 .bankAccount(user.getBankAccount())
+                .accountType(user.getAccountType())
                 .build();
     }
 }
