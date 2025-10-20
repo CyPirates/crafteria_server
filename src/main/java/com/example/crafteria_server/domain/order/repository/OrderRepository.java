@@ -78,6 +78,24 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("endDate") LocalDateTime endDate
     );
 
+    // 주별 매출 통계 (네이티브 쿼리)
+    @Query(value = """
+    SELECT 
+        YEAR(o.created_at) AS year,
+        WEEK(o.created_at, 1) AS week,
+        SUM(o.total_price) AS totalSalesAmount,
+        COUNT(o.id) AS totalOrders
+    FROM orders o
+    WHERE o.manufacturer_id = :manufacturerId
+      AND o.status = 'PAID'
+      AND o.created_at BETWEEN :startDate AND :endDate
+    GROUP BY year, week
+    ORDER BY year, week
+    """, nativeQuery = true)
+    List<WeeklySalesStatisticsProjection> findWeeklySalesStatistics(@Param("manufacturerId") Long manufacturerId,
+                                                                    @Param("startDate") LocalDate startDate,
+                                                                    @Param("endDate") LocalDate endDate);
+
 }
 
 
