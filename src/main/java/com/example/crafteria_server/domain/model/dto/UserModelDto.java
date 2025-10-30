@@ -1,13 +1,12 @@
 package com.example.crafteria_server.domain.model.dto;
 
 import com.example.crafteria_server.domain.file.entity.File;
-import com.example.crafteria_server.domain.model.entity.Model;
-import com.example.crafteria_server.domain.model.entity.ModelCategory;
-import com.example.crafteria_server.domain.model.entity.ModelPurchase;
+import com.example.crafteria_server.domain.model.entity.*;
 import com.example.crafteria_server.domain.user.dto.AuthorDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.apache.tomcat.jni.FileInfo;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -85,19 +84,37 @@ public class UserModelDto {
         @Schema(description = "설명용 이미지 URL 리스트")
         private java.util.List<String> descriptionImageUrls;
 
+        @Schema(description = "STL 파일 리스트 (URL + 원본이름)")
+        private List<FileInfo> modelFiles;
+
+        @Schema(description = "설명 이미지 파일 리스트 (URL + 원본이름)")
+        private List<FileInfo> descriptionImageFiles;
+
         @Schema(description = "썸네일 URL (설명 이미지가 있으면 그 중 첫 번째, 없으면 대표/첫 STL)")
         private String thumbnailUrl;
 
 
         public static ModelResponse from(Model model, boolean purchaseAvailability, boolean downloadable) {
 
-            java.util.List<String> stlUrls = (model.getAssets() != null && !model.getAssets().isEmpty())
-                    ? model.getAssets().stream().map(a -> a.getFile().getUrl()).toList()
-                    : java.util.List.of();
+            List<ModelAsset> assets = model.getAssets() == null ? List.of() : model.getAssets();
+            List<ModelDescriptionImage> descImgs = model.getDescriptionImages() == null ? List.of() : model.getDescriptionImages();
 
-            java.util.List<String> descUrls = (model.getDescriptionImages() != null && !model.getDescriptionImages().isEmpty())
-                    ? model.getDescriptionImages().stream().map(di -> di.getFile().getUrl()).toList()
-                    : java.util.List.of();
+            // URL 전용(하위호환)
+            List<String> stlUrls = assets.stream()
+                    .map(a -> a.getFile().getUrl())
+                    .toList();
+            List<String> descUrls = descImgs.stream()
+                    .map(di -> di.getFile().getUrl())
+                    .toList();
+
+            // 신규 FileInfo
+            List<FileInfo> stlFiles = assets.stream()
+                    .map(a -> FileInfo.from(a.getFile()))
+                    .toList();
+
+            List<FileInfo> descFiles = descImgs.stream()
+                    .map(di -> FileInfo.from(di.getFile()))
+                    .toList();
 
             String thumb = null;
             if (!descUrls.isEmpty()) {
@@ -107,10 +124,6 @@ public class UserModelDto {
             } else if (!stlUrls.isEmpty()) {
                 thumb = stlUrls.get(0);
             }
-
-            List<String> urls = model.getAssets().stream()
-                    .map(asset -> asset.getFile().getUrl())
-                    .toList();
 
             return ModelResponse.builder()
                     .id(model.getId())
@@ -127,8 +140,11 @@ public class UserModelDto {
                     .purchaseAvailability(purchaseAvailability)
                     .category(model.getCategory())
                     .downloadable(downloadable)
-                    .modelFileUrls(urls)
+                    .modelFileUrls(stlUrls)
                     .descriptionImageUrls(descUrls)
+                    .modelFiles(stlFiles)
+                    .descriptionImageFiles(descFiles)
+                    .thumbnailUrl(thumb)
                     .thumbnailUrl(thumb)
                     .build();
         }
@@ -157,6 +173,26 @@ public class UserModelDto {
                     .paymentId(modelPurchase.getPaymentId())
                     .downloadable(model.isDownloadable())
                     .modelFileUrls(urls)
+                    .build();
+        }
+    }
+
+    @Getter
+    @Setter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FileInfo {
+        @Schema(description = "파일 URL")
+        private String url;
+
+        @Schema(description = "원본 파일명")
+        private String originalName;
+
+        public static FileInfo from(com.example.crafteria_server.domain.file.entity.File f) {
+            return (f == null) ? null : FileInfo.builder()
+                    .url(f.getUrl())
+                    .originalName(f.getOriginalName())
                     .build();
         }
     }
