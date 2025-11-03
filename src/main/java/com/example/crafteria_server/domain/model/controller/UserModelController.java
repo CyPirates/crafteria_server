@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.util.List;
 import java.util.Optional;
@@ -103,5 +104,15 @@ public class UserModelController {
     ) {
         Optional<Long> userId = Optional.ofNullable(principalDetails).map(PrincipalDetails::getUserId);
         return JsonBody.of(200, "성공", modelService.getPaidModelList(page, userId));
+    }
+
+    @GetMapping("/download/{modelId}")
+    @Operation(summary = "모델 파일 다운로드", description = "모델의 STL이 여러 개면 ZIP으로, 하나면 원본 파일로 다운로드합니다.")
+    public ResponseEntity<StreamingResponseBody> downloadModelFiles(
+            @PathVariable Long modelId,
+            @AuthenticationPrincipal PrincipalDetails principalDetails
+    ) {
+        Long userId = principalDetails != null ? principalDetails.getUserId() : null;
+        return modelService.downloadModelFiles(modelId, userId);
     }
 }

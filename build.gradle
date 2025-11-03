@@ -34,6 +34,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.jboss.logging:jboss-logging:3.4.1.Final'
 
+    implementation 'com.google.cloud:google-cloud-storage:2.34.0'
+
     implementation 'org.springframework.boot:spring-boot-starter-webflux' // WebClient
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 

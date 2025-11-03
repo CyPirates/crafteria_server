@@ -1,7 +1,7 @@
 package com.example.crafteria_server.domain.model.service;
 
+import com.example.crafteria_server.config.EnvBean;
 import com.example.crafteria_server.domain.coupon.entity.Coupon;
-import com.example.crafteria_server.domain.coupon.entity.CouponType;
 import com.example.crafteria_server.domain.coupon.repository.CouponRepository;
 import com.example.crafteria_server.domain.coupon.service.CouponService;
 import com.example.crafteria_server.domain.file.entity.File;
@@ -19,19 +19,30 @@ import com.example.crafteria_server.domain.user.entity.User;
 import com.example.crafteria_server.domain.user.repository.AuthorRepository;
 import com.example.crafteria_server.domain.user.repository.UserRepository;
 import com.example.crafteria_server.domain.user.service.UserService;
+import com.google.cloud.ReadChannel;
+import com.google.cloud.storage.Blob;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import com.google.cloud.storage.Storage;
+import java.nio.channels.Channels;
+
 
 @Service
 @Slf4j(topic = "ModelService")
@@ -46,6 +57,9 @@ public class ModelService {
     private final FileService fileService;
     private final UserService userService;
     private final CouponService couponService;
+
+    private final Storage storage;
+    private final EnvBean envBean;
 
 
     public List<UserModelDto.ModelResponse> getPopularList(int page, Optional<Long> userId) {
@@ -467,6 +481,139 @@ public class ModelService {
                 .filter(f -> f != null && !f.isEmpty())
                 .map(fileService::saveImage) // 기존 FileService.saveImage 사용
                 .toList();
+    }
+
+    public ResponseEntity<StreamingResponseBody> downloadModelFiles(Long modelId, Long userId) {
+        Model model = modelRepository.findWithAssetsById(modelId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "도면을 찾을 수 없습니다."));
+
+        // ✅ 접근 권한: 작가 본인 또는 이미 구매 완료(verified) 사용자만 허용
+        if (!isAuthor(model, userId) && !hasVerifiedPurchase(userId, modelId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "다운로드 권한이 없습니다.");
+        }
+
+        // STL 자산만 필터링
+        List<ModelAsset> assets = model.getAssets() == null ? List.of()
+                : model.getAssets().stream()
+                .filter(a -> a.getFile() != null && "model/stl".equalsIgnoreCase(a.getFile().getExtension()))
+                .toList();
+
+        if (assets.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "다운로드할 STL 파일이 없습니다.");
+        }
+
+        if (assets.size() == 1) {
+            // 단일 파일: 원본 파일명 그대로 attachment
+            com.example.crafteria_server.domain.file.entity.File f = assets.get(0).getFile();
+            String originalName = safeDefaultName(f.getOriginalName(), "model.stl");
+            String blobName = f.getFileName(); // 저장 시 넣어둔 "models/{uuid}" 경로
+            Blob blob = storage.get(envBean.getBucketName(), blobName);
+            if (blob == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다.");
+            }
+
+            StreamingResponseBody body = out -> {
+                try (ReadChannel reader = blob.reader();
+                     InputStream in = Channels.newInputStream(reader)) {
+                    in.transferTo(out);
+                }
+            };
+
+            String cd = buildContentDisposition(originalName);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, cd)
+                    .contentType(MediaType.parseMediaType("model/stl"))
+                    .contentLength(blob.getSize())
+                    .body(body);
+        } else {
+            // 여러 개: ZIP으로 묶기
+            String zipName = buildZipName(model.getName());
+            StreamingResponseBody body = out -> {
+                try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(out)) {
+                    Set<String> usedNames = new java.util.HashSet<>();
+                    for (ModelAsset asset : assets) {
+                        com.example.crafteria_server.domain.file.entity.File f = asset.getFile();
+                        if (f == null) continue;
+
+                        String entryName = ensureStlExtension(safeDefaultName(f.getOriginalName(), "model.stl"));
+                        entryName = uniquify(entryName, usedNames);
+
+                        String blobName = f.getFileName();
+                        Blob blob = storage.get(envBean.getBucketName(), blobName);
+                        if (blob == null) continue;
+
+                        zos.putNextEntry(new java.util.zip.ZipEntry(entryName));
+                        try (ReadChannel reader = blob.reader();
+                             InputStream in = Channels.newInputStream(reader)) {
+                            in.transferTo(zos);
+                        }
+                        zos.closeEntry();
+                    }
+                    zos.finish();
+                }
+            };
+
+            String cd = buildContentDisposition(zipName);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, cd)
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM) // or application/zip
+                    .body(body);
+        }
+    }
+
+    private boolean isAuthor(Model model, Long userId) {
+        if (userId == null) return false;
+        return model.getAuthor() != null
+                && model.getAuthor().getUser() != null
+                && userId.equals(model.getAuthor().getUser().getId());
+    }
+
+    private boolean hasVerifiedPurchase(Long userId, Long modelId) {
+        if (userId == null) return false;
+        return modelPurchaseRepository
+                .findByUserIdAndModelIdAndVerifiedTrue(userId, modelId)
+                .isPresent();
+    }
+
+    private static String safeDefaultName(String original, String def) {
+        String name = (original == null || original.isBlank()) ? def : original;
+        // OS/ZIP 안전하지 않은 문자 제거
+        name = name.replace("\\", "_").replace("/", "_").replace("..", "_");
+        return name;
+    }
+
+    private static String ensureStlExtension(String name) {
+        if (!name.toLowerCase().endsWith(".stl")) {
+            return name + ".stl";
+        }
+        return name;
+    }
+
+    private static String buildZipName(String modelName) {
+        String base = (modelName == null || modelName.isBlank()) ? "model" : modelName;
+        base = base.replaceAll("[\\\\/\\s]+", "_");
+        return base + ".zip";
+    }
+
+    /** 파일명이 중복되면 'name (1).ext' 식으로 유니크 처리 */
+    private static String uniquify(String filename, Set<String> used) {
+        if (used.add(filename)) return filename;
+        int dot = filename.lastIndexOf('.');
+        String base = (dot > 0) ? filename.substring(0, dot) : filename;
+        String ext = (dot > 0) ? filename.substring(dot) : "";
+        int n = 1;
+        while (true) {
+            String cand = base + " (" + n + ")" + ext;
+            if (used.add(cand)) return cand;
+            n++;
+        }
+    }
+
+    /** RFC 5987 방식으로 UTF-8 안전하게 Content-Disposition 구성 */
+    private static String buildContentDisposition(String filename) {
+        String encoded = java.net.URLEncoder.encode(filename, java.nio.charset.StandardCharsets.UTF_8)
+                .replaceAll("\\+", "%20");
+        return "attachment; filename*=UTF-8''" + encoded;
     }
 
 }
