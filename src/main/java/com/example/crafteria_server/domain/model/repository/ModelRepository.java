@@ -42,5 +42,13 @@ public interface ModelRepository extends JpaRepository<Model, Long> {
     // ✅ 유료 도면 (price > 0)
     Page<Model> findAllByIsDeletedFalseAndPriceGreaterThanOrderByCreateDateDesc(long price, Pageable pageable);
 
+    @Query("""
+        select m
+        from Model m
+        left join fetch m.assets a
+        left join fetch a.file f
+        where m.id = :id
+    """)
+    Optional<Model> findWithAssetsById(@Param("id") Long id);
 
 }
