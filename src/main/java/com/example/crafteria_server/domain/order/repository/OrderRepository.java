@@ -96,6 +96,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
                                                                     @Param("startDate") LocalDate startDate,
                                                                     @Param("endDate") LocalDate endDate);
 
+    List<Order> findAllByUserIdAndStatusNotOrderByCreateDateDesc(
+            Long userId,
+            OrderStatus status,
+            Pageable pageable
+    );
+
 }
 
 

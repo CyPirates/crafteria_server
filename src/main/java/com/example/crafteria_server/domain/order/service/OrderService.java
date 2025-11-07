@@ -56,7 +56,9 @@ public class OrderService {
 
     public List<OrderDto.OrderResponse> getMyOrderList(Long userId, int page) {
         PageRequest pageable = PageRequest.of(page, 10);
-        List<Order> orders = orderRepository.findAllByUserIdExcludingOrdered(userId, pageable);
+
+        List<Order> orders = orderRepository
+                .findAllByUserIdAndStatusNotOrderByCreateDateDesc(userId, OrderStatus.ORDERED, pageable);
 
         List<Long> orderIds = orders.stream().map(Order::getId).toList();
         Map<Long, Review> reviewMap = reviewRepository.findByUser_IdAndOrder_IdIn(userId, orderIds)
