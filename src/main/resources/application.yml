@@ -104,4 +104,9 @@ server:
 springdoc:
   use-fqn: true
 
+solapi:
+  api-key: ${SOLAPI_API_KEY}
+  api-secret: ${SOLAPI_API_SECRET}
+  from: ${SOLAPI_FROM_NUMBER}
+
 

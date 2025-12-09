@@ -64,6 +64,9 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
+    // solapi
+    implementation files('libs/sdk-1.0.3.jar')
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.mockito:mockito-junit-jupiter:5.11.0'

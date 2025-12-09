@@ -43,16 +43,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderService {
     private final OrderRepository orderRepository;
-    private final ModelPurchaseRepository modelPurchaseRepository;
-    private final ModelRepository modelRepository;
     private final UserRepository userRepository;
     private final FileService fileService;
     private final ManufacturerRepository manufacturerRepository;  // 추가
     private final TechnologyRepository technologyRepository;  // 추가
-    private final UserService userService;
     private final CouponService couponService;
-    private final CouponRepository couponRepository;
     private final ReviewRepository reviewRepository;
+    private final OrderSmsNotificationService orderSmsNotificationService;
 
     public List<OrderDto.OrderResponse> getMyOrderList(Long userId, int page) {
         PageRequest pageable = PageRequest.of(page, 10);
@@ -146,6 +143,7 @@ public class OrderService {
             orderItems.add(orderItem);
         }
 
+
         order.setOrderItems(orderItems);
         orderRepository.save(order);
 
@@ -153,9 +151,8 @@ public class OrderService {
             couponService.markCouponAsUsed(appliedCoupon.getId(), userId);
         }
 
-        log.info("[주문 생성] 사용자: {}, 주문금액(할인+VAT+배송): {}, 제조사: {}, 항목 수: {}, 결제 ID: {}, 쿠폰 ID: {}",
-                user.getUsername(), finalPrice, manufacturer.getName(), orderItems.size(), paymentId,
-                appliedCoupon != null ? appliedCoupon.getId() : "없음");
+        // ✅ 문자 발송 시도 (실패해도 주문 흐름은 계속)
+        orderSmsNotificationService.sendOrderCreatedToManufacturer(order);
 
         return OrderDto.OrderResponse.from(order);
     }
