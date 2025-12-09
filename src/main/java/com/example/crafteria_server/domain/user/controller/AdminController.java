@@ -23,6 +23,7 @@ public class AdminController {
     private final UserRepository userRepository;
 
     // 역할 변경 API
+    
     @PatchMapping("/dashboard/{userId}/approve")
     @Operation(summary = "대시보드 사용자 승인", description = "대시보드 사용자를 승인합니다.")
     public ResponseEntity<?> approveDashboardUser(@PathVariable Long userId) {
